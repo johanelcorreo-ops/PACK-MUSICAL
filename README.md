@@ -5,6 +5,8 @@ Una página web que reproduce la música de tu carpeta de **Google Drive** como 
 - **No tiene botón de pausa.** Si el navegador, los auriculares o la pantalla de bloqueo la pausan, vuelve a sonar sola.
 - No se puede adelantar ni retroceder (la barra de progreso es solo visual).
 - Pasa a la siguiente canción automáticamente, en orden aleatorio, sin parar nunca.
+- **Categorías por género:** una carpeta de Drive por género (Vallenato, Reggae, Diciembre…) y la persona elige cuál escuchar.
+- Funciona con mp3, m4a, wav, ogg, flac y también **mp4** (solo suena el audio).
 - Puede tocar solo una **muestra** de cada canción (ej. 45 segundos) para que nadie escuche el pack completo gratis.
 - **Los enlaces de Google Drive nunca se muestran**: el servidor transmite el audio, así que el visitante no ve de dónde sale.
 - Botón verde de **"Comprar el pack"**, pensado para el tráfico de Meta Ads.
@@ -17,11 +19,17 @@ Una página web que reproduce la música de tu carpeta de **Google Drive** como 
 
 ## 1. Preparar Google Drive (5 minutos)
 
-1. Pon todas las canciones (mp3, m4a, wav…) en **una carpeta** de Google Drive (las subcarpetas también cuentan).
-2. Copia el **ID de la carpeta**: abre la carpeta y copia lo que va después de `/folders/` en la barra de direcciones.
-   `https://drive.google.com/drive/folders/`**`1AbCdEfGhIjKlMnOp`** ← eso.
-3. Comparte la carpeta: **Compartir → Acceso general → "Cualquier persona con el enlace" → Lector**.
-   (Nadie va a ver ese enlace; solo lo usa el servidor.)
+1. Crea **una carpeta por género** en tu Google Drive y sube ahí tus canciones (las subcarpetas también cuentan).
+2. Comparte cada carpeta: **Compartir → Acceso general → "Cualquier persona con el enlace" → Lector**.
+   (Nadie va a ver esos enlaces; solo los usa el servidor.)
+3. Arma la lista de géneros así, separados por `;` (puedes pegar el enlace completo de cada carpeta):
+
+   ```
+   Vallenato=https://drive.google.com/drive/folders/1AbC...; Reggae=https://drive.google.com/drive/folders/1XyZ...
+   ```
+
+   Eso va en la variable `GDRIVE_FOLDERS`. El orden en que los escribas es el orden de los botones.
+   Si solo tienes una carpeta, puedes usar `GDRIVE_FOLDER_ID` con su enlace y no salen botones de género.
 
 ## 2. Crear la API key de Google (5 minutos)
 
@@ -43,7 +51,7 @@ Una página web que reproduce la música de tu carpeta de **Google Drive** como 
 1. Crea una cuenta en <https://render.com> y conéctala con GitHub.
 2. **New → Blueprint** y elige este repositorio (usa el archivo `render.yaml`).
 3. Llena las variables que te pide:
-   - `GDRIVE_FOLDER_ID` → el ID del paso 1
+   - `GDRIVE_FOLDERS` → la lista del paso 1
    - `GOOGLE_API_KEY` → la clave del paso 2
    - `BUY_URL` → el enlace de pago (Hotmart, Stripe, WhatsApp, etc.)
 4. Espera a que termine y te dará una URL tipo `https://pack-musical-player.onrender.com`. **Esa es la que pones en tu anuncio de Meta.**
@@ -57,7 +65,8 @@ También funciona en Railway, Fly.io o Google Cloud Run (hay un `Dockerfile` lis
 
 | Variable | Qué hace | Por defecto |
 |---|---|---|
-| `GDRIVE_FOLDER_ID` | ID de la carpeta de Drive | — (obligatoria) |
+| `GDRIVE_FOLDERS` | Géneros: `Nombre=enlace; Nombre=enlace` | — |
+| `GDRIVE_FOLDER_ID` | Una sola carpeta (enlace o ID), si no usas géneros | — |
 | `GOOGLE_API_KEY` | API key de Google (carpeta pública) | — |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | JSON de cuenta de servicio (carpeta privada) | — |
 | `PREVIEW_SECONDS` | Segundos de cada canción antes de pasar a la siguiente. `0` = completa | `0` |
@@ -77,5 +86,7 @@ node --env-file=.env server.js
 Abre <http://localhost:3000>.
 
 ## Límites honestos
+
+Usa solo música tuya o con licencia que te permita venderla: Meta rechaza anuncios de música sin derechos y Drive puede cerrar las carpetas si las denuncian.
 
 Esto evita que la gente pause, adelante o descargue el audio desde la página, pero **nada en la web puede impedir al 100 % que alguien grabe lo que suena** en su computadora. Por eso se recomienda usar `PREVIEW_SECONDS` para mostrar solo un fragmento de cada canción y vender el pack completo.

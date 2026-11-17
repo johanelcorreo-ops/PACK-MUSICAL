@@ -8,6 +8,8 @@ const { Readable } = require("stream");
 const config = {
   port: Number(process.env.PORT) || 3000,
   folderId: process.env.GDRIVE_FOLDER_ID || "",
+  // Varias carpetas = varias "estaciones": "Vallenato=<enlace o ID>; Reggae=<enlace o ID>"
+  folders: process.env.GDRIVE_FOLDERS || "",
   apiKey: process.env.GOOGLE_API_KEY || "",
   serviceAccountJson: process.env.GOOGLE_SERVICE_ACCOUNT_JSON || "",
   previewSeconds: Number(process.env.PREVIEW_SECONDS) || 0, // 0 = canción completa
@@ -21,8 +23,28 @@ const config = {
 
 const DRIVE_API = process.env.DRIVE_API_BASE || "https://www.googleapis.com/drive/v3";
 
-if (!config.folderId) {
-  console.error("Falta GDRIVE_FOLDER_ID (el ID de la carpeta de Google Drive).");
+// Acepta el ID o el enlace completo de la carpeta.
+function folderIdFrom(value) {
+  const v = value.trim();
+  const m = v.match(/folders\/([A-Za-z0-9_-]+)/) || v.match(/[?&]id=([A-Za-z0-9_-]+)/);
+  return m ? m[1] : v;
+}
+
+const stations = [];
+for (const part of config.folders.split(/[;\n]+/)) {
+  if (!part.trim()) continue;
+  const eq = part.indexOf("=");
+  const name = eq > 0 ? part.slice(0, eq).trim() : `Estación ${stations.length + 1}`;
+  const folder = folderIdFrom(eq > 0 ? part.slice(eq + 1) : part);
+  if (folder) stations.push({ name, folderId: folder });
+}
+if (!stations.length && config.folderId) {
+  stations.push({ name: "Todo", folderId: folderIdFrom(config.folderId) });
+}
+stations.forEach((st, i) => (st.id = String(i)));
+
+if (!stations.length) {
+  console.error("Falta GDRIVE_FOLDERS o GDRIVE_FOLDER_ID (tu carpeta de Google Drive).");
   process.exit(1);
 }
 if (!config.apiKey && !config.serviceAccountJson) {
@@ -55,9 +77,11 @@ async function driveFetch(urlPath, params = {}, extraHeaders = {}) {
 
 // ---------- Lista de canciones (con caché) ----------
 // Cada canción recibe un token opaco; el ID de Drive se queda en el servidor.
-let cache = { at: 0, tracks: [], byToken: new Map() };
+const cache = new Map(); // station.id -> { at, tracks }
+const byToken = new Map(); // token -> archivo de Drive
 // Estable entre reinicios (y entre varias instancias) para no cortar a quien está escuchando.
-const tokenSecret = process.env.TOKEN_SECRET || config.folderId + (config.apiKey || config.serviceAccountJson);
+const tokenSecret =
+  process.env.TOKEN_SECRET || stations.map((s) => s.folderId).join() + (config.apiKey || config.serviceAccountJson);
 
 function tokenFor(driveId) {
   return crypto.createHmac("sha256", tokenSecret).update(driveId).digest("hex").slice(0, 20);
@@ -87,7 +111,11 @@ async function listAudioFiles(folderId, depth = 0) {
     for (const f of data.files || []) {
       if (f.mimeType === "application/vnd.google-apps.folder" && depth < 3) {
         files.push(...(await listAudioFiles(f.id, depth + 1))); // también subcarpetas
-      } else if (f.mimeType.startsWith("audio/") || /\.(mp3|m4a|aac|wav|ogg|flac)$/i.test(f.name)) {
+      } else if (
+        f.mimeType.startsWith("audio/") ||
+        f.mimeType === "video/mp4" || // de los mp4 solo suena el audio
+        /\.(mp3|m4a|aac|wav|ogg|flac|mp4)$/i.test(f.name)
+      ) {
         files.push(f);
       }
     }
@@ -96,19 +124,17 @@ async function listAudioFiles(folderId, depth = 0) {
   return files;
 }
 
-async function getTracks() {
-  if (Date.now() - cache.at < config.cacheMinutes * 60_000 && cache.tracks.length) {
-    return cache.tracks;
-  }
-  const files = await listAudioFiles(config.folderId);
-  const byToken = new Map();
+async function getTracks(station) {
+  const c = cache.get(station.id);
+  if (c && c.tracks.length && Date.now() - c.at < config.cacheMinutes * 60_000) return c.tracks;
+  const files = await listAudioFiles(station.folderId);
   const tracks = files.map((f) => {
     const token = tokenFor(f.id);
     byToken.set(token, f);
     return { id: token, name: cleanName(f.name) };
   });
-  cache = { at: Date.now(), tracks, byToken };
-  console.log(`Lista actualizada: ${tracks.length} canciones`);
+  cache.set(station.id, { at: Date.now(), tracks });
+  console.log(`${station.name}: ${tracks.length} canciones`);
   return tracks;
 }
 
@@ -124,13 +150,15 @@ app.get("/api/config", (_req, res) => {
     buyText: config.buyText,
     previewSeconds: config.previewSeconds,
     shuffle: config.shuffle,
+    stations: stations.map(({ id, name }) => ({ id, name })),
   });
 });
 
-app.get("/api/playlist", async (_req, res) => {
+app.get("/api/playlist", async (req, res) => {
+  const station = stations.find((s) => s.id === req.query.station) || stations[0];
   try {
     res.set("Cache-Control", "no-store");
-    res.json(await getTracks());
+    res.json(await getTracks(station));
   } catch (err) {
     console.error(err.message);
     res.status(502).json({ error: "No se pudo leer la carpeta de Google Drive" });
@@ -140,8 +168,11 @@ app.get("/api/playlist", async (_req, res) => {
 // Transmite el audio desde Drive soportando Range (necesario para Safari/iOS).
 app.get("/stream/:id", async (req, res) => {
   try {
-    await getTracks();
-    const file = cache.byToken.get(req.params.id);
+    let file = byToken.get(req.params.id);
+    if (!file) {
+      await Promise.all(stations.map((st) => getTracks(st).catch(() => [])));
+      file = byToken.get(req.params.id);
+    }
     if (!file) return res.status(404).end();
 
     const headers = {};
@@ -178,5 +209,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.listen(config.port, () => {
   console.log(`Reproductor listo en http://localhost:${config.port}`);
-  getTracks().catch((e) => console.error("No se pudo cargar la lista:", e.message));
+  for (const st of stations) {
+    getTracks(st).catch((e) => console.error(`No se pudo cargar ${st.name}:`, e.message));
+  }
 });
