@@ -15,7 +15,7 @@ services:
       - key: BUY_URL
         sync: false
       - key: PREVIEW_SECONDS
-        value: "45"
+        value: "0"
       - key: SHUFFLE
         value: "true"
       - key: SITE_TITLE

@@ -70,7 +70,7 @@ También funciona en Railway, Fly.io o Google Cloud Run (hay un `Dockerfile` lis
 | `GDRIVE_FOLDER_ID` | Una sola carpeta (enlace o ID), si no usas géneros | — |
 | `GOOGLE_API_KEY` | API key de Google (carpeta pública) | — |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | JSON de cuenta de servicio (carpeta privada) | — |
-| `PREVIEW_SECONDS` | Segundos que suena cada canción antes de pasar a la siguiente. `0` = completa | `0` (en Render: `45`) |
+| `PREVIEW_SECONDS` | Segundos que suena cada canción antes de pasar a la siguiente. `0` = completa | `0` |
 | `SHUFFLE` | Orden aleatorio | `true` |
 | `SITE_TITLE` / `SITE_SUBTITLE` | Textos de la página | `MÚSICA Y MÁS` / `Escucha, busca y disfruta toda la música` |
 | `PRICE_BEFORE` / `PRICE_NOW` | Precio antes y precio ahora (el % de descuento se calcula solo) | — |
