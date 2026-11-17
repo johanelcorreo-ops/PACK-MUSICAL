@@ -70,6 +70,13 @@ h1 { margin: 8px 0 4px; font-size: 1.8rem; letter-spacing: -0.02em; }
 .start:disabled { opacity: 0.6; animation: none; }
 @keyframes pulse { 50% { transform: scale(1.05); } }
 
+.stations { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 20px 0 16px; }
+.stations button {
+  border: 1px solid #ffffff22; background: #ffffff0a; color: var(--text);
+  padding: 8px 14px; border-radius: 999px; font-size: 0.9rem; cursor: pointer;
+}
+.stations button.on { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; font-weight: 700; }
+
 .player { margin-top: 4px; }
 .live {
   display: inline-flex; align-items: center; gap: 6px;

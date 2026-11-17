@@ -15,6 +15,7 @@
   let started = false;
   let changing = false;
   let errorsInARow = 0;
+  let station = "0";
 
   // Evita menú contextual y atajos de teclado (espacio, k, flechas...).
   document.addEventListener("contextmenu", (e) => e.preventDefault());
@@ -34,7 +35,42 @@
       $("buy").textContent = cfg.buyText;
       $("buy").hidden = false;
     }
+    renderStations();
   } catch (_) {}
+
+  // Botones de género: cambian de "estación", pero nunca dejan la música en silencio.
+  function renderStations() {
+    const list = cfg.stations || [];
+    if (list.length < 2) return;
+    const nav = $("stations");
+    nav.innerHTML = "";
+    for (const st of list) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = st.name;
+      b.dataset.id = st.id;
+      b.className = st.id === station ? "on" : "";
+      b.addEventListener("click", () => switchStation(st.id));
+      nav.appendChild(b);
+    }
+    nav.hidden = false;
+  }
+
+  async function switchStation(id) {
+    if (id === station) return;
+    station = id;
+    for (const b of $("stations").children) b.className = b.dataset.id === id ? "on" : "";
+    if (!started) return; // se usará al tocar "Escuchar ahora"
+    changing = true;
+    try {
+      await loadPlaylist();
+      pos = -1;
+      await next();
+    } catch (_) {
+      changing = false;
+      showError("Esta categoría no tiene canciones todavía.");
+    }
+  }
 
   function shuffle(arr) {
     const a = arr.slice();
@@ -51,7 +87,8 @@
   }
 
   async function loadPlaylist() {
-    const res = await fetch("/api/playlist");
+    $("error").hidden = true;
+    const res = await fetch("/api/playlist?station=" + encodeURIComponent(station));
     if (!res.ok) throw new Error("playlist");
     playlist = await res.json();
     if (!playlist.length) throw new Error("vacía");
