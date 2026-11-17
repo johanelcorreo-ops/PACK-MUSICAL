@@ -182,19 +182,34 @@
   $("search").addEventListener("input", () => {
     clearTimeout(searchTimer);
     const q = $("search").value.trim();
+    const seq = ++searchSeq;
     if (!q) { showList(stationTracks, false); return; }
-    searchTimer = setTimeout(async () => {
-      const seq = ++searchSeq;
-      $("listInfo").textContent = "Buscando…";
-      try {
-        const res = await fetch("/api/search?q=" + encodeURIComponent(q));
-        const results = await res.json();
-        if (seq === searchSeq) showList(results, true);
-      } catch (_) {
-        if (seq === searchSeq) $("listInfo").textContent = "No se pudo buscar. Intenta de nuevo.";
-      }
-    }, 250);
+    searchTimer = setTimeout(() => doSearch(q, seq, 0), 250);
   });
+
+  async function doSearch(q, seq, attempt) {
+    if (attempt === 0) $("listInfo").textContent = "Buscando…";
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 15000);
+    try {
+      const res = await fetch("/api/search?q=" + encodeURIComponent(q), { signal: ctrl.signal });
+      const data = await res.json();
+      if (seq !== searchSeq) return;
+      const results = Array.isArray(data) ? data : data.results || [];
+      showList(results, true);
+      if (data.loading) {
+        // Algunos géneros todavía se están cargando: se vuelve a buscar en 3 s.
+        $("listInfo").textContent = results.length
+          ? $("listInfo").textContent + " · cargando más géneros…"
+          : "Cargando la música, un momento…";
+        if (attempt < 20) searchTimer = setTimeout(() => doSearch(q, seq, attempt + 1), 3000);
+      }
+    } catch (_) {
+      if (seq === searchSeq) $("listInfo").textContent = "No se pudo buscar. Revisa tu conexión e intenta de nuevo.";
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
 
   // ---------- Reproducción ----------
   function fmt(s) {
@@ -302,7 +317,11 @@
       : '<path d="M8 5v14l11-7z"/>';
     sendListening();
   }
-  audio.addEventListener("play", updatePlayState);
+  audio.addEventListener("play", () => {
+    stopVideo();
+    setMediaSession();
+    updatePlayState();
+  });
   audio.addEventListener("pause", updatePlayState);
   audio.addEventListener("playing", () => { errorsInARow = 0; });
   audio.addEventListener("ended", next);
@@ -361,7 +380,271 @@
   sendListening();
   setInterval(sendListening, 20_000);
 
+  // ---------- Videos ----------
+  // El video se ve normal; si apagan la pantalla o cambian de app, su sonido sigue en un
+  // reproductor de audio (los celulares pausan los videos en segundo plano, pero no el audio).
+  const video = $("video");
+  const bg = new Audio();
+  bg.preload = "auto";
+  bg.setAttribute("controlsList", "nodownload");
+  let vList = [];
+  let vQueue = [];
+  let vi = -1;
+  let vCurrent = null;
+  let videoWanted = false; // la persona quiere que el video siga sonando
+  let audioOnly = false; // botón "pantalla apagada" activado
+  let bgActive = false; // el sonido del video está saliendo por el reproductor de audio
+  let bgUnlocked = false;
+  let vErrors = 0;
+
+  const streamUrl = (t) => `/stream/${t.id}`;
+  const sameSrc = (el, url) => el.getAttribute("src") === url;
+
+  function setSrcAt(el, url, t) {
+    if (sameSrc(el, url)) {
+      if (t > 0) el.currentTime = t;
+      return;
+    }
+    el.src = url;
+    if (t > 0) {
+      el.addEventListener("loadedmetadata", function f() {
+        el.currentTime = t;
+        el.removeEventListener("loadedmetadata", f);
+      });
+    }
+  }
+
+  // iPhone solo deja sonar un reproductor si se activó con un toque: se activa con un silencio.
+  function silentUrl() {
+    const n = 800, buf = new ArrayBuffer(44 + n), v = new DataView(buf);
+    const w = (o, str) => { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+    w(0, "RIFF"); v.setUint32(4, 36 + n, true); w(8, "WAVEfmt "); v.setUint32(16, 16, true);
+    v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, 8000, true); v.setUint32(28, 8000, true);
+    v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, "data"); v.setUint32(40, n, true);
+    for (let i = 0; i < n; i++) v.setUint8(44 + i, 128);
+    return URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+  }
+  function unlockBg() {
+    if (bgUnlocked || bgActive) return;
+    bgUnlocked = true;
+    const u = silentUrl();
+    bg.src = u;
+    bg.play().then(() => { if (bg.src === u) bg.pause(); }).catch(() => { bgUnlocked = false; });
+  }
+
+  function stopMusic() {
+    if (!audio.paused) audio.pause();
+  }
+
+  function stopVideo() {
+    videoWanted = false;
+    if (!video.paused) video.pause();
+    if (!bg.paused) bg.pause();
+  }
+
+  function playVideo(list, i) {
+    vQueue = list.slice();
+    unlockBg();
+    loadVideo(i);
+  }
+
+  function loadVideo(i) {
+    if (!vQueue.length) return;
+    vi = (i + vQueue.length) % vQueue.length;
+    vCurrent = vQueue[vi];
+    $("videoTitle").textContent = vCurrent.name;
+    videoWanted = true;
+    stopMusic();
+    if (bgActive || audioOnly) {
+      startBg(0);
+    } else {
+      setSrcAt(video, streamUrl(vCurrent), 0);
+      video.play().catch(() => {});
+    }
+    markVideo();
+    setVideoMediaSession();
+  }
+
+  function startBg(t) {
+    bgActive = true;
+    setSrcAt(bg, streamUrl(vCurrent), t);
+    if (!video.paused) video.pause();
+    bg.play().catch(() => {});
+  }
+
+  function backToVideo() {
+    if (!bgActive || !vCurrent) return;
+    const t = bg.currentTime;
+    const playing = !bg.paused;
+    bgActive = false;
+    bg.pause();
+    setSrcAt(video, streamUrl(vCurrent), t);
+    if (playing) video.play().catch(() => {});
+  }
+
+  function nextVideo() { loadVideo(vi + 1); }
+  function prevVideo() { loadVideo(vi - 1); }
+
+  video.addEventListener("play", () => {
+    if (bgActive) { // tocaron play en el video estando en modo pantalla apagada
+      audioOnly = false;
+      updateAudioOnly();
+      const t = bg.currentTime;
+      bgActive = false;
+      bg.pause();
+      video.currentTime = t;
+    }
+    videoWanted = true;
+    stopMusic();
+    setVideoMediaSession();
+  });
+  video.addEventListener("pause", () => {
+    if (!bgActive && !document.hidden) videoWanted = false;
+  });
+  video.addEventListener("playing", () => { vErrors = 0; });
+  bg.addEventListener("playing", () => { if (bgActive) vErrors = 0; });
+  video.addEventListener("ended", nextVideo);
+  bg.addEventListener("ended", () => { if (bgActive) nextVideo(); });
+  function onVideoError() {
+    if (!vCurrent || !videoWanted) return;
+    if (++vErrors > Math.min(5, vQueue.length)) return;
+    setTimeout(nextVideo, 500);
+  }
+  video.addEventListener("error", onVideoError);
+  bg.addEventListener("error", () => { if (bgActive) onVideoError(); });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      if (vCurrent && videoWanted && !bgActive) startBg(video.currentTime);
+    } else if (bgActive && !audioOnly) {
+      backToVideo();
+    }
+  });
+
+  function updateAudioOnly() {
+    $("audioOnly").classList.toggle("on", audioOnly);
+    $("audioOnly").querySelector("span").textContent = audioOnly
+      ? "Modo pantalla apagada activado · tocar para ver el video"
+      : "Escuchar con la pantalla apagada";
+  }
+  $("audioOnly").addEventListener("click", () => {
+    audioOnly = !audioOnly;
+    updateAudioOnly();
+    if (audioOnly) {
+      if (!vCurrent) { if (vList.length) playVideo(vList, 0); return; }
+      videoWanted = true;
+      stopMusic();
+      startBg(video.currentTime);
+    } else {
+      backToVideo();
+    }
+  });
+
+  function setVideoMediaSession() {
+    if (!("mediaSession" in navigator) || !vCurrent) return;
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: vCurrent.name,
+      artist: cfg.title || "MÚSICA Y MÁS",
+      album: "Videos",
+      artwork: [{ src: "/portada.jpg", sizes: "1000x1000", type: "image/jpeg" }],
+    });
+    const el = () => (bgActive ? bg : video);
+    const handlers = {
+      play: () => { videoWanted = true; el().play().catch(() => {}); },
+      pause: () => { videoWanted = false; el().pause(); },
+      nexttrack: nextVideo,
+      previoustrack: prevVideo,
+    };
+    for (const [k, fn] of Object.entries(handlers)) {
+      try { navigator.mediaSession.setActionHandler(k, fn); } catch (_) {}
+    }
+  }
+
+  function renderVideoFolders() {
+    const list = cfg.videoFolders || [];
+    if (list.length < 2) return;
+    const nav = $("videoFolders");
+    nav.innerHTML = "";
+    for (const f of list) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = f.name;
+      b.dataset.id = f.id;
+      b.addEventListener("click", () => selectVideoFolder(f.id));
+      nav.appendChild(b);
+    }
+    nav.hidden = false;
+  }
+
+  let vFolderSeq = 0;
+  async function selectVideoFolder(id) {
+    const seq = ++vFolderSeq;
+    for (const b of $("videoFolders").children) b.className = b.dataset.id === id ? "on" : "";
+    $("videoInfo").textContent = "Cargando videos…";
+    $("videoList").innerHTML = "";
+    try {
+      const res = await fetch("/api/videos?folder=" + encodeURIComponent(id));
+      if (!res.ok) throw new Error();
+      const list = await res.json();
+      if (seq !== vFolderSeq) return;
+      vList = list;
+      renderVideoList();
+    } catch (_) {
+      $("videoInfo").textContent = "No se pudieron cargar los videos. Intenta de nuevo.";
+    }
+  }
+
+  function renderVideoList() {
+    const ol = $("videoList");
+    ol.innerHTML = "";
+    $("videoInfo").textContent = vList.length
+      ? `${vList.length} video${vList.length === 1 ? "" : "s"}`
+      : "Esta carpeta no tiene videos todavía.";
+    vList.forEach((t, i) => {
+      const li = document.createElement("li");
+      li.dataset.id = t.id;
+      const n = document.createElement("span");
+      n.className = "n";
+      n.textContent = String(i + 1);
+      const name = document.createElement("span");
+      name.className = "name";
+      name.textContent = t.name;
+      li.append(n, name);
+      li.addEventListener("click", () => playVideo(vList, i));
+      ol.appendChild(li);
+    });
+    markVideo();
+  }
+
+  function markVideo() {
+    [...$("videoList").children].forEach((li, i) => {
+      const on = vCurrent && li.dataset.id === vCurrent.id;
+      li.classList.toggle("playing", !!on);
+      li.querySelector(".n").textContent = on ? "▶" : String(i + 1);
+    });
+  }
+
+  // ---------- Pestañas ----------
+  function showTab(tab) {
+    for (const b of $("tabs").children) b.className = b.dataset.tab === tab ? "on" : "";
+    $("musicCard").hidden = tab !== "music";
+    $("videosCard").hidden = tab !== "videos";
+  }
+  for (const b of $("tabs").children) b.addEventListener("click", () => showTab(b.dataset.tab));
+
   // ---------- Inicio ----------
-  renderStations();
-  selectStation((cfg.stations && cfg.stations[0] && cfg.stations[0].id) || "0");
+  const hasMusic = (cfg.stations || []).length > 0;
+  const hasVideos = (cfg.videoFolders || []).length > 0;
+  if (hasMusic) {
+    renderStations();
+    selectStation(cfg.stations[0].id);
+  } else {
+    $("heroPlay").hidden = true;
+  }
+  if (hasVideos) {
+    renderVideoFolders();
+    selectVideoFolder(cfg.videoFolders[0].id);
+  }
+  if (hasMusic && hasVideos) $("tabs").hidden = false;
+  showTab(hasMusic ? "music" : "videos");
 })();

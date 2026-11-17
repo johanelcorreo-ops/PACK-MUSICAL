@@ -5,6 +5,7 @@ App web para escuchar y vender tu música, conectada a tus carpetas de **Google 
 - **Portada** del pack y textos personalizables.
 - **Reproductor completo:** play/pausa, anterior, siguiente, aleatorio y barra para adelantar.
 - **Buscador** de canciones en todos los géneros a la vez (no importan tildes ni mayúsculas).
+- **Videos:** pestaña de videos con su propia lista. Si apagan la pantalla o cambian de app, **el sonido del video sigue**, y al volver el video continúa en el mismo segundo. También hay un botón "Escuchar con la pantalla apagada".
 - **Categorías por género:** una carpeta de Drive por género y la persona elige cuál escuchar.
 - **"🔥 N personas escuchando ahora":** contador **real** de las personas que tienen la música sonando.
 - **Precio con descuento** y botón de **WhatsApp** con mensaje listo, más un botón flotante de WhatsApp.
@@ -65,6 +66,7 @@ También funciona en Railway, Fly.io o Google Cloud Run (hay un `Dockerfile` lis
 | Variable | Qué hace | Por defecto |
 |---|---|---|
 | `GDRIVE_FOLDERS` | Géneros: `Nombre=enlace; Nombre=enlace` | — |
+| `VIDEO_FOLDERS` | Carpetas de videos: `Relajante=enlace; Naturaleza=enlace` (vacío = sin pestaña de videos) | — |
 | `GDRIVE_FOLDER_ID` | Una sola carpeta (enlace o ID), si no usas géneros | — |
 | `GOOGLE_API_KEY` | API key de Google (carpeta pública) | — |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | JSON de cuenta de servicio (carpeta privada) | — |
@@ -77,6 +79,15 @@ También funciona en Railway, Fly.io o Google Cloud Run (hay un `Dockerfile` lis
 | `PACK_FEATURES` | Puntos de "¿Qué incluye?", separados por `\|` | 4 puntos de ejemplo |
 | `BUY_URL` / `BUY_TEXT` | Otro botón de compra, ej. Hotmart o Mercado Pago (vacío = sin botón) | — / `Comprar el pack` |
 | `CACHE_MINUTES` | Cada cuánto se vuelve a leer la carpeta | `10` |
+
+## Videos
+
+1. Sube tus videos (**MP4** es lo que mejor funciona en todos los celulares) a una carpeta de Drive y compártela como "Cualquier persona con el enlace".
+2. En Render → Environment agrega `VIDEO_FOLDERS` con `Relajante=https://drive.google.com/drive/folders/...`.
+3. Aparece la pestaña **🎬 Videos**.
+
+> Los videos pasan por el servidor de Render. El plan gratis incluye 100 GB de transferencia al mes;
+> si muchas personas ven videos largos, revisa el consumo en Render.
 
 ## Probar en tu computadora
 

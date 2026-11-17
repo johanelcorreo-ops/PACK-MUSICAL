@@ -8,6 +8,8 @@ services:
     envVars:
       - key: GDRIVE_FOLDERS
         sync: false
+      - key: VIDEO_FOLDERS
+        sync: false
       - key: GOOGLE_API_KEY
         sync: false
       - key: BUY_URL
