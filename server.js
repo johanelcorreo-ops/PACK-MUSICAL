@@ -1,5 +1,5 @@
-// Servidor que reproduce las canciones de una carpeta de Google Drive
-// como una "radio" sin pausa. Los IDs reales de Drive nunca llegan al navegador.
+// Servidor de la app: lee las canciones de carpetas de Google Drive y las transmite.
+// Los IDs reales de Drive nunca llegan al navegador.
 const express = require("express");
 const path = require("path");
 const crypto = require("crypto");
@@ -14,10 +14,18 @@ const config = {
   serviceAccountJson: process.env.GOOGLE_SERVICE_ACCOUNT_JSON || "",
   previewSeconds: Number(process.env.PREVIEW_SECONDS) || 0, // 0 = canción completa
   shuffle: (process.env.SHUFFLE || "true") !== "false",
-  title: process.env.SITE_TITLE || "Pack Musical",
-  subtitle: process.env.SITE_SUBTITLE || "Escucha una muestra del pack",
+  title: process.env.SITE_TITLE || "MÚSICA Y MÁS",
+  subtitle: process.env.SITE_SUBTITLE || "Escucha, busca y disfruta toda la música",
   buyUrl: process.env.BUY_URL || "",
   buyText: process.env.BUY_TEXT || "Comprar el pack",
+  // Información del pack (los puntos se separan con "|")
+  features: (process.env.PACK_FEATURES ||
+    "Todos los géneros organizados por carpetas|Descarga en MP3 y MP4|Entrega inmediata por WhatsApp|Acceso para siempre")
+    .split("|").map((f) => f.trim()).filter(Boolean),
+  priceBefore: process.env.PRICE_BEFORE || "",
+  priceNow: process.env.PRICE_NOW || "",
+  whatsappNumber: (process.env.WHATSAPP_NUMBER || "").replace(/\D/g, ""),
+  whatsappMessage: process.env.WHATSAPP_MESSAGE || "Hola, quiero el pack de MÚSICA Y MÁS 🎶",
   cacheMinutes: Number(process.env.CACHE_MINUTES) || 10,
 };
 
@@ -151,7 +159,46 @@ app.get("/api/config", (_req, res) => {
     previewSeconds: config.previewSeconds,
     shuffle: config.shuffle,
     stations: stations.map(({ id, name }) => ({ id, name })),
+    features: config.features,
+    priceBefore: config.priceBefore,
+    priceNow: config.priceNow,
+    whatsappUrl: config.whatsappNumber
+      ? `https://wa.me/${config.whatsappNumber}?text=${encodeURIComponent(config.whatsappMessage)}`
+      : "",
   });
+});
+
+// Buscador: busca en todos los géneros a la vez.
+function normalize(t) {
+  return t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+app.get("/api/search", async (req, res) => {
+  const words = normalize(String(req.query.q || "")).split(/\s+/).filter(Boolean);
+  if (!words.length) return res.json([]);
+  const results = [];
+  for (const st of stations) {
+    let tracks = [];
+    try { tracks = await getTracks(st); } catch (_) { continue; }
+    for (const t of tracks) {
+      const n = normalize(t.name);
+      if (words.every((w) => n.includes(w))) {
+        results.push({ ...t, station: st.id, stationName: st.name });
+        if (results.length >= 100) return res.json(results);
+      }
+    }
+  }
+  res.json(results);
+});
+
+// Oyentes reales: cada navegador que está sonando avisa cada 20 s.
+const listeners = new Map(); // id -> última señal
+app.post("/api/listening", express.json({ limit: "1kb" }), (req, res) => {
+  const id = String((req.body && req.body.id) || "").slice(0, 40);
+  if (id && req.body.active) listeners.set(id, Date.now());
+  else if (id) listeners.delete(id);
+  const cutoff = Date.now() - 60_000;
+  for (const [k, t] of listeners) if (t < cutoff) listeners.delete(k);
+  res.json({ count: listeners.size });
 });
 
 app.get("/api/playlist", async (req, res) => {
@@ -203,6 +250,23 @@ app.get("/stream/:id", async (req, res) => {
     console.error(err.message);
     if (!res.headersSent) res.status(502).end();
   }
+});
+
+// Página principal: Facebook y WhatsApp necesitan la dirección completa de la imagen de vista previa.
+const fs = require("fs");
+const indexHtml = fs.readFileSync(path.join(__dirname, "public", "index.html"), "utf8");
+const escapeHtml = (t) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+app.get(["/", "/index.html"], (req, res) => {
+  const origin = `${req.headers["x-forwarded-proto"] || req.protocol}://${req.get("host")}`;
+  const title = escapeHtml(config.title);
+  const desc = escapeHtml(config.subtitle);
+  res.type("html").send(
+    indexHtml
+      .replace('content="/og.jpg"', `content="${origin}/og.jpg"`)
+      .replaceAll("<title>MÚSICA Y MÁS</title>", `<title>${title}</title>`)
+      .replaceAll('content="MÚSICA Y MÁS"', `content="${title}"`)
+      .replaceAll('content="Escucha, busca y disfruta toda la música. Todos los géneros."', `content="${desc}"`)
+  );
 });
 
 app.use(express.static(path.join(__dirname, "public")));

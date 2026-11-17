@@ -17,4 +17,12 @@ services:
       - key: SHUFFLE
         value: "true"
       - key: SITE_TITLE
-        value: Pack Musical
+        value: MÚSICA Y MÁS
+      - key: SITE_SUBTITLE
+        value: Escucha, busca y disfruta toda la música
+      - key: PRICE_BEFORE
+        value: $60.000
+      - key: PRICE_NOW
+        value: $12.900
+      - key: WHATSAPP_NUMBER
+        sync: false

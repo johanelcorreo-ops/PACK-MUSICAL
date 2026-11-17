@@ -1,19 +1,18 @@
-# Pack Musical Player 🎧
+# MÚSICA Y MÁS 🎧
 
-Una página web que reproduce la música de tu carpeta de **Google Drive** como si fuera una radio:
+App web para escuchar y vender tu música, conectada a tus carpetas de **Google Drive**:
 
-- **No tiene botón de pausa.** Si el navegador, los auriculares o la pantalla de bloqueo la pausan, vuelve a sonar sola.
-- No se puede adelantar ni retroceder (la barra de progreso es solo visual).
-- Pasa a la siguiente canción automáticamente, en orden aleatorio, sin parar nunca.
-- **Categorías por género:** una carpeta de Drive por género (Vallenato, Reggae, Diciembre…) y la persona elige cuál escuchar.
+- **Portada** del pack y textos personalizables.
+- **Reproductor completo:** play/pausa, anterior, siguiente, aleatorio y barra para adelantar.
+- **Buscador** de canciones en todos los géneros a la vez (no importan tildes ni mayúsculas).
+- **Categorías por género:** una carpeta de Drive por género y la persona elige cuál escuchar.
+- **"🔥 N personas escuchando ahora":** contador **real** de las personas que tienen la música sonando.
+- **Precio con descuento** y botón de **WhatsApp** con mensaje listo, más un botón flotante de WhatsApp.
+- **¿Qué incluye?:** lista con la información del pack.
 - Funciona con mp3, m4a, wav, ogg, flac y también **mp4** (solo suena el audio).
-- Puede tocar solo una **muestra** de cada canción (ej. 45 segundos) para que nadie escuche el pack completo gratis.
-- **Los enlaces de Google Drive nunca se muestran**: el servidor transmite el audio, así que el visitante no ve de dónde sale.
-- Botón verde de **"Comprar el pack"**, pensado para el tráfico de Meta Ads.
-- Si subes canciones nuevas a la carpeta, aparecen solas (se revisa cada 10 minutos).
-
-> ⚠️ Los navegadores no dejan reproducir sonido sin que la persona toque la pantalla primero.
-> Por eso la página muestra un botón **"Escuchar ahora"**. Después de ese toque, la música ya no para.
+- **Muestra opcional:** cada canción puede sonar solo X segundos (ej. 45) y pasar a la siguiente.
+- **Los enlaces de Google Drive nunca se muestran**: el servidor transmite el audio.
+- Si subes canciones nuevas a tus carpetas, aparecen solas (se revisa cada 10 minutos).
 
 ---
 
@@ -69,10 +68,14 @@ También funciona en Railway, Fly.io o Google Cloud Run (hay un `Dockerfile` lis
 | `GDRIVE_FOLDER_ID` | Una sola carpeta (enlace o ID), si no usas géneros | — |
 | `GOOGLE_API_KEY` | API key de Google (carpeta pública) | — |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | JSON de cuenta de servicio (carpeta privada) | — |
-| `PREVIEW_SECONDS` | Segundos de cada canción antes de pasar a la siguiente. `0` = completa | `0` |
+| `PREVIEW_SECONDS` | Segundos que suena cada canción antes de pasar a la siguiente. `0` = completa | `0` (en Render: `45`) |
 | `SHUFFLE` | Orden aleatorio | `true` |
-| `SITE_TITLE` / `SITE_SUBTITLE` | Textos de la página | `Pack Musical` / `Escucha una muestra del pack` |
-| `BUY_URL` / `BUY_TEXT` | Enlace y texto del botón de compra (vacío = sin botón) | — / `Comprar el pack` |
+| `SITE_TITLE` / `SITE_SUBTITLE` | Textos de la página | `MÚSICA Y MÁS` / `Escucha, busca y disfruta toda la música` |
+| `PRICE_BEFORE` / `PRICE_NOW` | Precio antes y precio ahora (el % de descuento se calcula solo) | — |
+| `WHATSAPP_NUMBER` | Tu WhatsApp con indicativo, ej. `573001234567` (vacío = sin botones de WhatsApp) | — |
+| `WHATSAPP_MESSAGE` | Mensaje que te llega al tocar el botón | `Hola, quiero el pack de MÚSICA Y MÁS 🎶` |
+| `PACK_FEATURES` | Puntos de "¿Qué incluye?", separados por `\|` | 4 puntos de ejemplo |
+| `BUY_URL` / `BUY_TEXT` | Otro botón de compra, ej. Hotmart o Mercado Pago (vacío = sin botón) | — / `Comprar el pack` |
 | `CACHE_MINUTES` | Cada cuánto se vuelve a leer la carpeta | `10` |
 
 ## Probar en tu computadora
@@ -89,4 +92,15 @@ Abre <http://localhost:3000>.
 
 Usa solo música tuya o con licencia que te permita venderla: Meta rechaza anuncios de música sin derechos y Drive puede cerrar las carpetas si las denuncian.
 
-Esto evita que la gente pause, adelante o descargue el audio desde la página, pero **nada en la web puede impedir al 100 % que alguien grabe lo que suena** en su computadora. Por eso se recomienda usar `PREVIEW_SECONDS` para mostrar solo un fragmento de cada canción y vender el pack completo.
+La página no ofrece botón de descarga, pero **nada en la web puede impedir al 100 % que alguien grabe lo que suena** en su computadora. Por eso se recomienda usar `PREVIEW_SECONDS` para mostrar solo un fragmento de cada canción y vender el pack completo.
+
+## Cambiar la portada
+
+La portada está en `design/portada.svg`. Para volver a generar `public/portada.jpg` y `public/og.jpg`
+(la imagen que sale al compartir el enlace por WhatsApp o Facebook):
+
+```bash
+node design/render.js design/portada.svg public/portada.jpg public/og.jpg
+```
+
+O simplemente reemplaza `public/portada.jpg` por tu propia imagen cuadrada.

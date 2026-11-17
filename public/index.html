@@ -3,36 +3,104 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Pack Musical</title>
-  <meta name="theme-color" content="#0b0b12" />
+  <title>MÚSICA Y MÁS</title>
+  <meta name="description" content="Escucha, busca y disfruta toda la música. Todos los géneros." />
+  <meta name="theme-color" content="#120a30" />
+  <meta property="og:title" content="MÚSICA Y MÁS" />
+  <meta property="og:description" content="Escucha, busca y disfruta toda la música. Todos los géneros." />
+  <meta property="og:image" content="/og.jpg" />
+  <meta property="og:type" content="website" />
+  <link rel="icon" href="/portada.jpg" />
+  <link rel="apple-touch-icon" href="/portada.jpg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <main class="card">
-    <div class="eq" id="eq" aria-hidden="true">
-      <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-    </div>
+  <main class="app">
+    <!-- Portada -->
+    <header class="hero">
+      <img class="cover" src="/portada.jpg" alt="Portada de MÚSICA Y MÁS" width="1000" height="1000" />
+      <h1 id="title">MÚSICA Y MÁS</h1>
+      <p class="subtitle" id="subtitle">Escucha, busca y disfruta toda la música</p>
+      <div class="listeners" id="listeners" hidden><i></i><span id="listenersText"></span></div>
+      <button id="heroPlay" class="hero-play" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+        <span>Escuchar ahora</span>
+      </button>
+    </header>
 
-    <h1 id="title">Pack Musical</h1>
-    <p class="subtitle" id="subtitle">Escucha una muestra del pack</p>
-
-    <button id="start" class="start" type="button">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-      <span>Escuchar ahora</span>
-    </button>
-
-    <nav id="stations" class="stations" hidden></nav>
-
-    <section id="player" class="player" hidden>
-      <div class="live"><i></i> Sonando</div>
-      <div class="now" id="now">Cargando…</div>
-      <div class="bar"><div class="fill" id="fill"></div></div>
-      <div class="meta"><span id="counter"></span></div>
+    <!-- Oferta -->
+    <section class="offer" id="offer" hidden>
+      <div class="prices" id="prices" hidden>
+        <span class="before" id="priceBefore"></span>
+        <span class="now" id="priceNow"></span>
+        <span class="tag" id="discount" hidden></span>
+      </div>
+      <a class="btn btn-wa" id="waBtn" href="#" target="_blank" rel="noopener" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg>
+        <span>Comprar por WhatsApp</span>
+      </a>
+      <a class="btn btn-buy" id="buyBtn" href="#" target="_blank" rel="noopener" hidden>Comprar el pack</a>
     </section>
 
-    <a id="buy" class="buy" href="#" target="_blank" rel="noopener" hidden>Comprar el pack</a>
+    <!-- Qué incluye -->
+    <section class="card" id="featuresCard" hidden>
+      <h2>¿Qué incluye?</h2>
+      <ul class="features" id="features"></ul>
+    </section>
+
+    <!-- Música -->
+    <section class="card music">
+      <h2>Escucha la música</h2>
+      <nav class="stations" id="stations" hidden></nav>
+      <label class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2a8 8 0 0 1 6.3 12.9l5.4 5.4-1.4 1.4-5.4-5.4A8 8 0 1 1 10 2zm0 2a6 6 0 1 0 0 12 6 6 0 0 0 0-12z"/></svg>
+        <input id="search" type="search" placeholder="Buscar canción o artista…" autocomplete="off" enterkeyhint="search" />
+      </label>
+      <p class="list-info" id="listInfo">Cargando canciones…</p>
+      <ol class="songs" id="songs"></ol>
+    </section>
+
     <p class="error" id="error" hidden></p>
   </main>
+
+  <!-- WhatsApp flotante -->
+  <a class="wa-float" id="waFloat" href="#" target="_blank" rel="noopener" aria-label="Escríbenos por WhatsApp" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg>
+  </a>
+
+  <!-- Reproductor -->
+  <footer class="player" id="player" hidden>
+    <div class="player-inner">
+      <img class="thumb" src="/portada.jpg" alt="" width="48" height="48" />
+      <div class="track">
+        <div class="track-name" id="trackName">—</div>
+        <div class="track-station" id="trackStation"></div>
+      </div>
+      <div class="controls">
+        <button type="button" id="shuffleBtn" class="ctl small" aria-label="Aleatorio" title="Aleatorio">
+          <svg viewBox="0 0 24 24"><path d="M17 3h4v4h-2V6.4l-4.3 4.3-1.4-1.4L17.6 5H17V3zM3 6h3.6c1.4 0 2.7.7 3.5 1.8l6.1 8.5c.4.5 1 .8 1.6.8h.6V16h2v4h-4v-2h.4l-.4-.1h-.6c-1.3 0-2.6-.7-3.3-1.8L6.4 8.6C6 8.2 5.6 8 5 8H3V6zm0 10h2c.6 0 1-.2 1.4-.6l1.5-2.1 1.2 1.7-1.1 1.6A3.6 3.6 0 0 1 5 18H3v-2z"/></svg>
+        </button>
+        <button type="button" id="prevBtn" class="ctl" aria-label="Anterior">
+          <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zM9.5 12 18 6v12z"/></svg>
+        </button>
+        <button type="button" id="playBtn" class="ctl play" aria-label="Reproducir">
+          <svg class="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="i-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+        </button>
+        <button type="button" id="nextBtn" class="ctl" aria-label="Siguiente">
+          <svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 6l8.5 6L6 18z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="progress">
+      <span id="tCur">0:00</span>
+      <input type="range" id="seek" min="0" max="1000" value="0" aria-label="Posición" />
+      <span id="tDur">0:00</span>
+    </div>
+  </footer>
 
   <script src="/player.js"></script>
 </body>
