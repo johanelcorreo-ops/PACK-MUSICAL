@@ -51,8 +51,32 @@
       <ul class="features" id="features"></ul>
     </section>
 
+    <!-- Pestañas Música / Videos -->
+    <nav class="tabs" id="tabs" hidden>
+      <button type="button" class="on" data-tab="music">🎵 Música</button>
+      <button type="button" data-tab="videos">🎬 Videos</button>
+    </nav>
+
+    <!-- Videos -->
+    <section class="card videos" id="videosCard" hidden>
+      <h2>Videos</h2>
+      <nav class="stations" id="videoFolders" hidden></nav>
+      <div class="video-wrap">
+        <video id="video" playsinline webkit-playsinline preload="metadata" controls controlslist="nodownload" disablepictureinpicture="false" poster="/og.jpg"></video>
+      </div>
+      <div class="video-now">
+        <div class="video-title" id="videoTitle">Elige un video</div>
+        <button type="button" class="audio-only" id="audioOnly">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0-9 9v6a3 3 0 0 0 3 3h2v-8H5v-1a7 7 0 0 1 14 0v1h-3v8h2a3 3 0 0 0 3-3v-6a9 9 0 0 0-9-9z"/></svg>
+          <span>Escuchar con la pantalla apagada</span>
+        </button>
+      </div>
+      <p class="list-info" id="videoInfo">Cargando videos…</p>
+      <ol class="songs" id="videoList"></ol>
+    </section>
+
     <!-- Música -->
-    <section class="card music">
+    <section class="card music" id="musicCard">
       <h2>Escucha la música</h2>
       <nav class="stations" id="stations" hidden></nav>
       <label class="search">
