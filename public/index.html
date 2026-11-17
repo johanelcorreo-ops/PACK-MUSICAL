@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Pack Musical</title>
+  <meta name="theme-color" content="#0b0b12" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="card">
+    <div class="eq" id="eq" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <h1 id="title">Pack Musical</h1>
+    <p class="subtitle" id="subtitle">Escucha una muestra del pack</p>
+
+    <button id="start" class="start" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+      <span>Escuchar ahora</span>
+    </button>
+
+    <section id="player" class="player" hidden>
+      <div class="live"><i></i> Sonando</div>
+      <div class="now" id="now">Cargando…</div>
+      <div class="bar"><div class="fill" id="fill"></div></div>
+      <div class="meta"><span id="counter"></span></div>
+    </section>
+
+    <a id="buy" class="buy" href="#" target="_blank" rel="noopener" hidden>Comprar el pack</a>
+    <p class="error" id="error" hidden></p>
+  </main>
+
+  <script src="/player.js"></script>
+</body>
+</html>
