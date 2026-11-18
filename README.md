@@ -81,6 +81,17 @@ También funciona en Railway, Fly.io o Google Cloud Run (hay un `Dockerfile` lis
 | `BUY_URL` / `BUY_TEXT` | Otro botón de compra, ej. Hotmart o Mercado Pago (vacío = sin botón) | — / `Comprar el pack` |
 | `CACHE_MINUTES` | Cada cuánto se vuelve a leer la carpeta | `10` |
 
+## Página: músicos, cifras y oferta
+
+- **Músicos a los lados** (computador) y en una tarima debajo de la portada (celular). Por defecto son ilustraciones
+  originales (`public/musicos.svg`). Para usar tus propias imágenes (por ejemplo hechas con IA), súbelas a
+  `public/artistas/` — ver `public/artistas/LEEME.md`. **No uses fotos de artistas famosos.**
+- **Cifras reales** debajo del título: canciones, géneros y videos que hay en tus carpetas, y
+  "N personas ya tienen el pack" (comprobantes aprobados), que solo aparece desde `MIN_BUYERS_TO_SHOW` (5).
+- **Cinta con los géneros**, disco girando, luces y notas animadas.
+- **Botón fijo "Desbloquea TODO por $…"** abajo, mientras la persona no ha pagado.
+- **Cuenta regresiva** solo si pones en `OFFER_ENDS` la fecha **real** en que termina la oferta, ej. `2026-11-30T23:59:00-05:00`.
+
 ## Comprobantes de pago
 
 **Cómo funciona para el cliente:** escucha 1 canción (o video) gratis → al intentar otra le sale "Desbloquea toda la música" con los datos para pagar → sube la captura del comprobante → si todo cuadra se desbloquea al instante y recibe un **código de acceso** para entrar desde otro celular.
@@ -111,6 +122,7 @@ También funciona en Railway, Fly.io o Google Cloud Run (hay un `Dockerfile` lis
 | `ADMIN_PASSWORD` | Contraseña para entrar a `/admin` (mínimo 6 caracteres) |
 | `PAYMENT_ACCOUNTS` | Tu número/cuenta a donde pagan, ej. `3016797379` (varias separadas por coma) |
 | `PAYMENT_INFO` | Texto con los datos de pago que ve el cliente, ej. `Nequi, Daviplata o llave Bre-B 301 679 7379` |
+| `OFFER_ENDS` | (Opcional) Fecha real de fin de la oferta para la cuenta regresiva, ej. `2026-11-30T23:59:00-05:00` |
 | `RECEIPT_MAX_DAYS` | Días de antigüedad aceptados (opcional, por defecto `2`) |
 
 Si faltan `SUPABASE_URL`, `SUPABASE_ANON_KEY` o `MYM_SECRET`, la app funciona como antes, sin bloqueo.

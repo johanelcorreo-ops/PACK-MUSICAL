@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <!-- Músicos ilustrados originales (estilo pictograma). Se pintan con el color del texto (currentColor). -->
+
+  <!-- Cantante con micrófono -->
+  <symbol id="cantante" viewBox="0 0 200 300">
+    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M100 80 L100 160" stroke-width="40"/>
+      <path d="M90 88 L58 66 L44 30" stroke-width="17"/>
+      <path d="M110 90 L150 108 L150 76" stroke-width="17"/>
+      <path d="M92 162 L78 226 L70 286" stroke-width="22"/>
+      <path d="M108 162 L126 224 L140 284" stroke-width="22"/>
+      <path d="M150 76 L141 52" stroke-width="8"/>
+    </g>
+    <circle cx="96" cy="42" r="23" fill="currentColor"/>
+    <circle cx="138" cy="44" r="11" fill="currentColor"/>
+    <circle cx="44" cy="26" r="9" fill="currentColor"/>
+  </symbol>
+
+  <!-- Guitarrista -->
+  <symbol id="guitarrista" viewBox="0 0 200 300">
+    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M96 82 L92 162" stroke-width="40"/>
+      <path d="M86 166 L70 228 L62 288" stroke-width="22"/>
+      <path d="M100 166 L120 226 L134 286" stroke-width="22"/>
+      <path d="M128 132 L182 64" stroke-width="10"/>
+      <path d="M176 58 L190 44" stroke-width="14"/>
+      <path d="M104 92 L150 104 L166 86" stroke-width="16"/>
+      <path d="M86 94 L74 132 L104 146" stroke-width="16"/>
+    </g>
+    <circle cx="98" cy="42" r="23" fill="currentColor"/>
+    <g transform="rotate(-38 110 150)" fill="currentColor">
+      <ellipse cx="96" cy="150" rx="30" ry="24"/>
+      <ellipse cx="132" cy="150" rx="22" ry="18"/>
+    </g>
+    <circle cx="112" cy="146" r="7" fill="#0d0820" opacity=".55"/>
+  </symbol>
+
+  <!-- Acordeonero con sombrero -->
+  <symbol id="acordeonero" viewBox="0 0 200 300">
+    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M100 84 L100 162" stroke-width="40"/>
+      <path d="M92 164 L80 226 L72 286" stroke-width="22"/>
+      <path d="M108 164 L122 226 L130 286" stroke-width="22"/>
+      <path d="M84 94 L50 116 L52 128" stroke-width="16"/>
+      <path d="M116 94 L150 116 L148 128" stroke-width="16"/>
+    </g>
+    <circle cx="100" cy="46" r="22" fill="currentColor"/>
+    <ellipse cx="100" cy="30" rx="44" ry="9" fill="currentColor"/>
+    <path d="M80 30 Q82 6 100 6 Q118 6 120 30 Z" fill="currentColor"/>
+    <!-- acordeón (con fuelles marcados para que se distinga del cuerpo) -->
+    <rect x="44" y="106" width="112" height="64" rx="8" fill="currentColor"/>
+    <g stroke="#0d0820" stroke-width="4" opacity=".7">
+      <path d="M70 110 L70 166 M84 110 L84 166 M98 110 L98 166 M112 110 L112 166 M126 110 L126 166"/>
+    </g>
+    <g fill="#0d0820" opacity=".7">
+      <circle cx="54" cy="122" r="3.5"/><circle cx="54" cy="138" r="3.5"/><circle cx="54" cy="154" r="3.5"/>
+      <circle cx="144" cy="122" r="3.5"/><circle cx="144" cy="138" r="3.5"/><circle cx="144" cy="154" r="3.5"/>
+    </g>
+  </symbol>
+
+  <!-- DJ con audífonos -->
+  <symbol id="dj" viewBox="0 0 200 300">
+    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M100 86 L100 176" stroke-width="40"/>
+      <path d="M86 96 L56 70 L46 28" stroke-width="16"/>
+      <path d="M114 100 L144 140 L130 182" stroke-width="16"/>
+      <path d="M72 46 Q72 12 100 12 Q128 12 128 46" stroke-width="7"/>
+    </g>
+    <circle cx="100" cy="46" r="23" fill="currentColor"/>
+    <rect x="64" y="36" width="12" height="24" rx="5" fill="currentColor"/>
+    <rect x="124" y="36" width="12" height="24" rx="5" fill="currentColor"/>
+    <circle cx="46" cy="24" r="10" fill="currentColor"/>
+    <!-- consola -->
+    <rect x="18" y="186" width="164" height="34" rx="8" fill="currentColor"/>
+    <rect x="34" y="220" width="12" height="70" rx="4" fill="currentColor"/>
+    <rect x="154" y="220" width="12" height="70" rx="4" fill="currentColor"/>
+    <ellipse cx="62" cy="182" rx="30" ry="8" fill="currentColor" opacity=".55"/>
+    <ellipse cx="140" cy="182" rx="30" ry="8" fill="currentColor" opacity=".55"/>
+  </symbol>
+
+  <!-- Trompetista -->
+  <symbol id="trompetista" viewBox="0 0 200 300">
+    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M86 84 L84 162" stroke-width="40"/>
+      <path d="M78 166 L64 228 L58 288" stroke-width="22"/>
+      <path d="M92 166 L110 226 L122 286" stroke-width="22"/>
+      <path d="M94 94 L120 90 L132 70" stroke-width="15"/>
+      <path d="M78 98 L96 120 L144 72" stroke-width="15"/>
+      <path d="M108 56 L162 64" stroke-width="9"/>
+    </g>
+    <circle cx="88" cy="46" r="23" fill="currentColor"/>
+    <path d="M158 58 L196 40 L196 96 L158 74 Z" fill="currentColor"/>
+    <rect x="128" y="60" width="22" height="12" rx="3" fill="currentColor"/>
+  </symbol>
+
+  <!-- Bailarina -->
+  <symbol id="bailarina" viewBox="0 0 200 300">
+    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M100 84 L104 150" stroke-width="34"/>
+      <path d="M90 92 L58 64 L40 26" stroke-width="15"/>
+      <path d="M112 90 L148 80 L170 46" stroke-width="15"/>
+      <path d="M112 214 L148 252 L172 250" stroke-width="20"/>
+      <path d="M94 216 L84 254 L82 290" stroke-width="20"/>
+    </g>
+    <circle cx="100" cy="46" r="22" fill="currentColor"/>
+    <path d="M82 46 Q70 70 80 92" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round"/>
+    <path d="M86 140 L122 140 L150 222 L62 222 Z" fill="currentColor"/>
+    <circle cx="40" cy="22" r="8" fill="currentColor"/>
+    <circle cx="172" cy="42" r="8" fill="currentColor"/>
+  </symbol>
+</svg>
