@@ -25,6 +25,7 @@
       <h1 id="title">MÚSICA Y MÁS</h1>
       <p class="subtitle" id="subtitle">Escucha, busca y disfruta toda la música</p>
       <div class="listeners" id="listeners" hidden><i></i><span id="listenersText"></span></div>
+      <button type="button" class="access" id="access" hidden></button>
       <button id="heroPlay" class="hero-play" type="button">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
         <span>Escuchar ahora</span>
@@ -43,6 +44,7 @@
         <span>Comprar por WhatsApp</span>
       </a>
       <a class="btn btn-buy" id="buyBtn" href="#" target="_blank" rel="noopener" hidden>Comprar el pack</a>
+      <button type="button" class="btn btn-pay" id="payBtn" hidden>📎 Ya pagué: subir comprobante</button>
     </section>
 
     <!-- Qué incluye -->
@@ -60,6 +62,7 @@
     <!-- Videos -->
     <section class="card videos" id="videosCard" hidden>
       <h2>Videos</h2>
+      <p class="pick-label" id="videoFoldersLabel" hidden>Elige una categoría</p>
       <nav class="stations" id="videoFolders" hidden></nav>
       <div class="video-wrap">
         <video id="video" playsinline webkit-playsinline preload="metadata" controls controlslist="nodownload" disablepictureinpicture="false" poster="/og.jpg"></video>
@@ -78,6 +81,7 @@
     <!-- Música -->
     <section class="card music" id="musicCard">
       <h2>Escucha la música</h2>
+      <p class="pick-label" id="stationsLabel" hidden>Elige un género</p>
       <nav class="stations" id="stations" hidden></nav>
       <label class="search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2a8 8 0 0 1 6.3 12.9l5.4 5.4-1.4 1.4-5.4-5.4A8 8 0 1 1 10 2zm0 2a6 6 0 1 0 0 12 6 6 0 0 0 0-12z"/></svg>
@@ -125,6 +129,39 @@
       <span id="tDur">0:00</span>
     </div>
   </footer>
+
+  <!-- Comprobante de pago -->
+  <div class="modal" id="paywall" hidden role="dialog" aria-modal="true" aria-labelledby="pwTitle">
+    <div class="modal-box">
+      <button type="button" class="modal-close" id="pwClose" aria-label="Cerrar">×</button>
+      <h2 id="pwTitle">🔒 Desbloquea toda la música</h2>
+      <p class="pw-sub" id="pwSub">Ya escuchaste tu canción de prueba. Para seguir escuchando todo:</p>
+      <ol class="pw-steps">
+        <li>Paga <b id="pwPrice">el pack</b><span id="pwInfo"></span></li>
+        <li>Sube aquí la captura del comprobante. Se revisa al instante.</li>
+      </ol>
+      <form id="pwForm" novalidate>
+        <input id="pwName" placeholder="Tu nombre" autocomplete="name" maxlength="120" />
+        <input id="pwPhone" placeholder="Tu WhatsApp" inputmode="tel" autocomplete="tel" maxlength="20" />
+        <label class="pw-file">
+          <input type="file" id="pwFile" accept="image/*" />
+          <span id="pwFileText">📎 Elegir captura del comprobante</span>
+        </label>
+        <img id="pwPreview" class="pw-preview" alt="Vista previa del comprobante" hidden />
+        <button class="btn btn-buy" type="submit" id="pwSend">Enviar comprobante</button>
+      </form>
+      <div class="pw-result" id="pwResult" hidden></div>
+      <details class="pw-code" id="pwCode">
+        <summary>¿Ya pagaste en otro celular? Entra con tu código</summary>
+        <form id="codeForm" class="code-form">
+          <input id="codeInput" placeholder="Tu código" autocapitalize="characters" maxlength="12" />
+          <button class="btn btn-small" type="submit">Entrar</button>
+        </form>
+        <p class="code-msg" id="codeMsg"></p>
+      </details>
+      <a class="pw-help" id="pwHelp" href="#" target="_blank" rel="noopener" hidden>¿Problemas? Escríbenos por WhatsApp</a>
+    </div>
+  </div>
 
   <script src="/player.js"></script>
 </body>

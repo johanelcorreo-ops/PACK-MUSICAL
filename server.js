@@ -29,6 +29,18 @@ const config = {
   whatsappNumber: (process.env.WHATSAPP_NUMBER || "").replace(/\D/g, ""),
   whatsappMessage: process.env.WHATSAPP_MESSAGE || "Hola, quiero el pack de MÚSICA Y MÁS 🎶",
   cacheMinutes: Number(process.env.CACHE_MINUTES) || 10,
+  // ---- Comprobantes de pago (se activan cuando están las 3 variables de Supabase) ----
+  supabaseUrl: process.env.SUPABASE_URL || "",
+  supabaseKey: process.env.SUPABASE_ANON_KEY || "",
+  mymSecret: process.env.MYM_SECRET || "",
+  adminPassword: process.env.ADMIN_PASSWORD || "",
+  // Valor mínimo que debe tener el comprobante (si no se pone, se toma de PRICE_NOW)
+  priceAmount: Number(String(process.env.PRICE_AMOUNT || process.env.PRICE_NOW || "").replace(/\D/g, "")) || 0,
+  // Cuenta(s) a donde deben pagar, separadas por coma (ej. "3016797379")
+  paymentAccounts: (process.env.PAYMENT_ACCOUNTS || "").split(",").map((s) => s.trim()).filter(Boolean),
+  // Texto que ve el cliente con los datos para pagar
+  paymentInfo: process.env.PAYMENT_INFO || "",
+  receiptMaxDays: Number(process.env.RECEIPT_MAX_DAYS) || 2,
 };
 
 const DRIVE_API = process.env.DRIVE_API_BASE || "https://www.googleapis.com/drive/v3";
@@ -205,6 +217,184 @@ async function getTracks(source) {
 // ---------- App ----------
 const app = express();
 app.disable("x-powered-by");
+app.set("trust proxy", 1); // Render pasa la IP real del visitante
+
+// ---------- Comprobantes de pago y acceso ----------
+const pagos = require("./pagos");
+const paywall = Boolean(config.supabaseUrl && config.supabaseKey && config.mymSecret.length >= 24);
+const db = paywall ? pagos.crearDB({ url: config.supabaseUrl, key: config.supabaseKey, secret: config.mymSecret }) : null;
+const cookies = pagos.crearCookies(config.mymSecret || tokenSecret);
+if (!paywall) console.log("Comprobantes de pago: desactivado (faltan SUPABASE_URL, SUPABASE_ANON_KEY o MYM_SECRET).");
+if (paywall && !config.priceAmount) console.warn("Ojo: falta PRICE_NOW o PRICE_AMOUNT; no se revisará el valor del comprobante.");
+
+// Estado de cada código de acceso (se consulta a la base de datos cada 2 minutos como máximo).
+const estadoCache = new Map(); // codigo -> { at, estado, motivo }
+async function estadoDeCodigo(codigo) {
+  if (!codigo) return null;
+  const c = estadoCache.get(codigo);
+  if (c && Date.now() - c.at < 120_000) return c;
+  try {
+    const r = await db.estado(codigo);
+    const v = { at: Date.now(), estado: r.estado, motivo: r.motivo || null };
+    estadoCache.set(codigo, v);
+    return v;
+  } catch (err) {
+    console.error(err.message);
+    return c || null; // si la base no responde, se usa lo último conocido
+  }
+}
+
+async function acceso(req) {
+  const ck = cookies.leer(req);
+  if (!paywall) return { ck, unlocked: true };
+  const est = await estadoDeCodigo(ck.c);
+  return { ck, est, unlocked: est ? est.estado === "aprobado" : false };
+}
+
+// ¿Puede reproducir este archivo? (1 canción o video gratis por dispositivo)
+async function puedeReproducir(req, res, id) {
+  const a = await acceso(req);
+  if (a.unlocked) return true;
+  if (!a.ck.t) {
+    cookies.escribir(res, { ...a.ck, t: id });
+    return true;
+  }
+  return a.ck.t === id;
+}
+
+app.get("/api/acceso", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  const a = await acceso(req);
+  res.json({
+    paywall,
+    unlocked: a.unlocked,
+    trialId: a.ck.t || null,
+    codigo: a.ck.c || null,
+    estado: a.est ? a.est.estado : null,
+    motivo: a.est ? a.est.motivo : null,
+  });
+});
+
+// Límite de envíos por IP (para que no llenen la base de imágenes).
+const envios = new Map(); // ip -> [tiempos]
+function demasiadosEnvios(ip) {
+  const ahora = Date.now();
+  const lista = (envios.get(ip) || []).filter((t) => ahora - t < 3600_000);
+  lista.push(ahora);
+  envios.set(ip, lista);
+  return lista.length > 6;
+}
+
+app.post("/api/comprobante", express.json({ limit: "4mb" }), async (req, res) => {
+  if (!paywall) return res.status(404).json({ error: "Los comprobantes no están activados" });
+  if (demasiadosEnvios(req.ip)) {
+    return res.status(429).json({ error: "Demasiados intentos. Espera un rato o escríbenos por WhatsApp." });
+  }
+  const nombre = String(req.body.nombre || "").trim().slice(0, 120);
+  const telefono = String(req.body.telefono || "").replace(/[^\d+ ]/g, "").trim().slice(0, 40);
+  const imagen = String(req.body.imagen || "");
+  const m = imagen.match(/^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/);
+  if (!nombre || !telefono) return res.status(400).json({ error: "Escribe tu nombre y tu WhatsApp." });
+  if (!m) return res.status(400).json({ error: "Sube la imagen del comprobante (foto o captura de pantalla)." });
+  const buffer = Buffer.from(m[2], "base64");
+  if (buffer.length < 5_000 || buffer.length > 3_000_000) {
+    return res.status(400).json({ error: "La imagen no es válida. Sube una captura de pantalla del comprobante." });
+  }
+
+  try {
+    let texto = "";
+    try {
+      texto = await pagos.leerImagen(buffer);
+    } catch (err) {
+      console.error("No se pudo leer el comprobante:", err.message);
+    }
+    const r = pagos.analizarComprobante(texto, {
+      precio: config.priceAmount || 1,
+      maxDias: config.receiptMaxDays,
+      cuentas: config.paymentAccounts,
+    });
+    if (!texto.trim()) {
+      r.estado = "pendiente";
+      r.motivo = "No se pudo leer el texto de la imagen";
+    }
+    const guardado = await db.registrar({
+      ...r,
+      nombre,
+      telefono,
+      codigo: pagos.nuevoCodigo(),
+      texto,
+      imagen,
+    });
+    if (guardado.estado !== "rechazado") {
+      const ck = cookies.leer(req);
+      cookies.escribir(res, { ...ck, c: guardado.codigo });
+      estadoCache.set(guardado.codigo, { at: Date.now(), estado: guardado.estado, motivo: guardado.motivo });
+    }
+    console.log(`Comprobante ${guardado.estado}: ${r.banco} ref ${r.referencia} valor ${r.valor} fecha ${r.fecha}`);
+    res.json({
+      estado: guardado.estado,
+      motivo: guardado.motivo,
+      codigo: guardado.estado === "rechazado" ? null : guardado.codigo,
+      leido: { referencia: r.referencia, valor: r.valor, fecha: r.fecha, banco: r.banco },
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(502).json({ error: "No pudimos guardar tu comprobante. Intenta de nuevo o escríbenos por WhatsApp." });
+  }
+});
+
+// Usar un código de acceso en otro celular o computador.
+app.post("/api/codigo", express.json({ limit: "1kb" }), async (req, res) => {
+  if (!paywall) return res.status(404).json({ error: "Los comprobantes no están activados" });
+  if (demasiadosEnvios("codigo:" + req.ip)) return res.status(429).json({ error: "Demasiados intentos. Espera un rato." });
+  const codigo = String(req.body.codigo || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12);
+  if (codigo.length < 5) return res.status(400).json({ error: "Escribe el código completo." });
+  estadoCache.delete(codigo);
+  const est = await estadoDeCodigo(codigo);
+  if (!est || est.estado === "no_existe") return res.status(404).json({ error: "Ese código no existe." });
+  if (est.estado === "aprobado" || est.estado === "pendiente") {
+    cookies.escribir(res, { ...cookies.leer(req), c: codigo });
+  }
+  res.json({ estado: est.estado, motivo: est.motivo });
+});
+
+// ---------- Panel de administración (/admin) ----------
+function esAdmin(req) {
+  const pass = String(req.headers["x-admin-password"] || "");
+  if (!config.adminPassword || config.adminPassword.length < 6) return false;
+  const a = crypto.createHash("sha256").update(pass).digest();
+  const b = crypto.createHash("sha256").update(config.adminPassword).digest();
+  return crypto.timingSafeEqual(a, b);
+}
+app.use("/api/admin", (req, res, next) => {
+  if (!paywall) return res.status(404).json({ error: "Los comprobantes no están activados" });
+  if (!config.adminPassword) return res.status(403).json({ error: "Falta configurar ADMIN_PASSWORD en Render." });
+  if (demasiadosEnvios("admin:" + req.ip) && !esAdmin(req)) return res.status(429).json({ error: "Demasiados intentos." });
+  if (!esAdmin(req)) return res.status(401).json({ error: "Contraseña incorrecta" });
+  res.set("Cache-Control", "no-store");
+  next();
+});
+app.get("/api/admin/comprobantes", async (_req, res) => {
+  try { res.json(await db.listar(500)); } catch (err) { res.status(502).json({ error: err.message }); }
+});
+app.get("/api/admin/imagen/:id", async (req, res) => {
+  try {
+    const img = await db.imagen(req.params.id);
+    const m = String(img || "").match(/^data:(image\/[a-z]+);base64,(.+)$/);
+    if (!m) return res.status(404).end();
+    res.type(m[1]).send(Buffer.from(m[2], "base64"));
+  } catch (err) { res.status(502).json({ error: err.message }); }
+});
+app.post("/api/admin/estado", express.json({ limit: "1kb" }), async (req, res) => {
+  const estado = String(req.body.estado || "");
+  if (!["aprobado", "pendiente", "rechazado", "bloqueado"].includes(estado)) return res.status(400).json({ error: "Estado no válido" });
+  try {
+    const r = await db.cambiarEstado(String(req.body.id || ""), estado);
+    estadoCache.clear(); // el cambio se aplica de inmediato
+    res.json(r);
+  } catch (err) { res.status(502).json({ error: err.message }); }
+});
+app.get("/admin", (_req, res) => res.sendFile(path.join(__dirname, "public", "admin.html")));
 
 app.get("/api/config", (_req, res) => {
   res.json({
@@ -222,6 +412,8 @@ app.get("/api/config", (_req, res) => {
     whatsappUrl: config.whatsappNumber
       ? `https://wa.me/${config.whatsappNumber}?text=${encodeURIComponent(config.whatsappMessage)}`
       : "",
+    paywall,
+    paymentInfo: config.paymentInfo,
   });
 });
 
@@ -298,6 +490,9 @@ app.get("/stream/:id", async (req, res) => {
       file = byToken.get(req.params.id);
     }
     if (!file) return res.status(404).end();
+    if (!(await puedeReproducir(req, res, req.params.id))) {
+      return res.status(402).json({ error: "Sube tu comprobante de pago para escuchar todo" });
+    }
 
     const headers = {};
     if (req.headers.range) headers.Range = req.headers.range;

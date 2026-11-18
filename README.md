@@ -6,6 +6,7 @@ App web para escuchar y vender tu música, conectada a tus carpetas de **Google 
 - **Reproductor completo:** play/pausa, anterior, siguiente, aleatorio y barra para adelantar.
 - **Buscador** de canciones en todos los géneros a la vez (no importan tildes ni mayúsculas).
 - **Videos:** pestaña de videos con su propia lista. Si apagan la pantalla o cambian de app, **el sonido del video sigue**, y al volver el video continúa en el mismo segundo. También hay un botón "Escuchar con la pantalla apagada".
+- **Comprobantes de pago:** cada persona escucha **1 canción o video gratis**; para seguir sube la captura del comprobante (Nequi, Bancolombia, Daviplata, Bre-B). La app lee la referencia, el valor, la fecha y la cuenta destino, **rechaza comprobantes repetidos** y desbloquea al instante si todo cuadra. Lo dudoso queda pendiente para que tú lo revises en `/admin`.
 - **Categorías por género:** una carpeta de Drive por género y la persona elige cuál escuchar.
 - **"🔥 N personas escuchando ahora":** contador **real** de las personas que tienen la música sonando.
 - **Precio con descuento** y botón de **WhatsApp** con mensaje listo, más un botón flotante de WhatsApp.
@@ -79,6 +80,40 @@ También funciona en Railway, Fly.io o Google Cloud Run (hay un `Dockerfile` lis
 | `PACK_FEATURES` | Puntos de "¿Qué incluye?", separados por `\|` | 4 puntos de ejemplo |
 | `BUY_URL` / `BUY_TEXT` | Otro botón de compra, ej. Hotmart o Mercado Pago (vacío = sin botón) | — / `Comprar el pack` |
 | `CACHE_MINUTES` | Cada cuánto se vuelve a leer la carpeta | `10` |
+
+## Comprobantes de pago
+
+**Cómo funciona para el cliente:** escucha 1 canción (o video) gratis → al intentar otra le sale "Desbloquea toda la música" con los datos para pagar → sube la captura del comprobante → si todo cuadra se desbloquea al instante y recibe un **código de acceso** para entrar desde otro celular.
+
+**Qué revisa la app en cada comprobante** (lee el texto de la imagen):
+
+| Revisión | Si falla |
+|---|---|
+| Número de referencia / comprobante / aprobación | Queda **pendiente** |
+| La referencia **no se ha usado antes** | **Rechazado** ("Este comprobante ya fue usado") |
+| Valor ≥ precio (`PRICE_NOW`) | Queda pendiente |
+| Fecha de los últimos `RECEIPT_MAX_DAYS` días (2 por defecto) | Queda pendiente |
+| Aparece tu cuenta (`PAYMENT_ACCOUNTS`) como destino | Queda pendiente |
+
+> ⚠️ Ninguna app puede saber si una imagen fue **editada**. Revisa de vez en cuando los aprobados contra tu Nequi/banco:
+> si alguien hizo trampa, en `/admin` le das **Bloquear** y pierde el acceso al instante en todos sus dispositivos.
+> Para un control 100 % automático habría que cobrar con una pasarela (Wompi, Mercado Pago, ePayco).
+
+**Panel:** entra a `tu-pagina.onrender.com/admin` con la contraseña `ADMIN_PASSWORD`. Ahí ves cada comprobante con su imagen, lo que leyó la app y los botones Aprobar / Bloquear.
+
+**Variables en Render → Environment:**
+
+| Variable | Valor |
+|---|---|
+| `SUPABASE_URL` | Dirección del proyecto de Supabase |
+| `SUPABASE_ANON_KEY` | Clave pública (anon) del proyecto |
+| `MYM_SECRET` | Clave secreta guardada en la tabla `mym_settings` (mínimo 24 caracteres) |
+| `ADMIN_PASSWORD` | Contraseña para entrar a `/admin` (mínimo 6 caracteres) |
+| `PAYMENT_ACCOUNTS` | Tu número/cuenta a donde pagan, ej. `3016797379` (varias separadas por coma) |
+| `PAYMENT_INFO` | Texto con los datos de pago que ve el cliente, ej. `Nequi, Daviplata o llave Bre-B 301 679 7379` |
+| `RECEIPT_MAX_DAYS` | Días de antigüedad aceptados (opcional, por defecto `2`) |
+
+Si faltan `SUPABASE_URL`, `SUPABASE_ANON_KEY` o `MYM_SECRET`, la app funciona como antes, sin bloqueo.
 
 ## Videos
 

@@ -28,3 +28,16 @@ services:
         value: $12.900
       - key: WHATSAPP_NUMBER
         sync: false
+      # Comprobantes de pago (Supabase)
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: MYM_SECRET
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: PAYMENT_ACCOUNTS
+        sync: false
+      - key: PAYMENT_INFO
+        sync: false
