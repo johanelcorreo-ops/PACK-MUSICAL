@@ -41,7 +41,24 @@ const config = {
   // Texto que ve el cliente con los datos para pagar
   paymentInfo: process.env.PAYMENT_INFO || "",
   receiptMaxDays: Number(process.env.RECEIPT_MAX_DAYS) || 2,
+  // Fecha REAL en que termina la oferta, ej. 2026-11-30T23:59:00-05:00 (vacío = sin cuenta regresiva)
+  offerEnds: process.env.OFFER_ENDS || "",
+  // Mostrar "N personas ya compraron" solo desde este número
+  minBuyersToShow: Number(process.env.MIN_BUYERS_TO_SHOW) || 5,
 };
+
+// Imágenes de cantantes/DJs (por ejemplo hechas con IA): se suben a public/artistas/ y salen solas.
+const artistas = (() => {
+  try {
+    return require("fs")
+      .readdirSync(require("path").join(__dirname, "public", "artistas"))
+      .filter((f) => /\.(png|jpe?g|webp|avif)$/i.test(f))
+      .sort((a, b) => a.localeCompare(b, "es", { numeric: true }))
+      .map((f) => "/artistas/" + encodeURIComponent(f));
+  } catch (_) {
+    return [];
+  }
+})();
 
 const DRIVE_API = process.env.DRIVE_API_BASE || "https://www.googleapis.com/drive/v3";
 
@@ -414,6 +431,25 @@ app.get("/api/config", (_req, res) => {
       : "",
     paywall,
     paymentInfo: config.paymentInfo,
+    artistas,
+    offerEnds: config.offerEnds && !Number.isNaN(Date.parse(config.offerEnds)) ? new Date(config.offerEnds).toISOString() : "",
+  });
+});
+
+// Cifras reales para la portada: canciones, géneros, videos y compradores.
+let compradores = { at: 0, n: 0 };
+app.get("/api/stats", async (_req, res) => {
+  const total = (list) => list.reduce((n, s) => n + ((cache.get(s.id) || {}).tracks || []).length, 0);
+  if (paywall && Date.now() - compradores.at > 10 * 60_000) {
+    try { compradores = { at: Date.now(), n: Number(await db.contar()) || 0 }; } catch (_) { compradores.at = Date.now(); }
+  }
+  res.set("Cache-Control", "no-store");
+  res.json({
+    canciones: total(stations),
+    generos: stations.length,
+    videos: total(videoFolders),
+    cargando: allSources.some((s) => !cache.has(s.id)),
+    compradores: compradores.n >= config.minBuyersToShow ? compradores.n : 0,
   });
 });
 

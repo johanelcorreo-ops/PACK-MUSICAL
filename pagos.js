@@ -205,6 +205,7 @@ function crearDB({ url, key, secret }) {
     listar: (limite = 300) => rpc("mym_listar", { p_limite: limite }),
     imagen: (id) => rpc("mym_imagen", { p_id: id }),
     cambiarEstado: (id, estado) => rpc("mym_cambiar_estado", { p_id: id, p_estado: estado }),
+    contar: () => rpc("mym_contar", {}),
   };
 }
 

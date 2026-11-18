@@ -41,3 +41,5 @@ services:
         sync: false
       - key: PAYMENT_INFO
         sync: false
+      - key: OFFER_ENDS
+        sync: false

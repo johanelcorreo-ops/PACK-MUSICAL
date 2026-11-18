@@ -18,13 +18,25 @@
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
+  <!-- Fondo animado: luces y notas musicales -->
+  <div class="fx" id="fx" aria-hidden="true"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span></div>
+  <!-- Músicos a los lados (computador) -->
+  <aside class="stage stage-left" id="stageLeft" aria-hidden="true"></aside>
+  <aside class="stage stage-right" id="stageRight" aria-hidden="true"></aside>
+
   <main class="app">
     <!-- Portada -->
     <header class="hero">
-      <img class="cover" src="/portada.jpg" alt="Portada de MÚSICA Y MÁS" width="1000" height="1000" />
+      <div class="cover-wrap">
+        <span class="vinyl" aria-hidden="true"></span>
+        <img class="cover" src="/portada.jpg" alt="Portada de MÚSICA Y MÁS" width="1000" height="1000" />
+      </div>
       <h1 id="title">MÚSICA Y MÁS</h1>
       <p class="subtitle" id="subtitle">Escucha, busca y disfruta toda la música</p>
+      <div class="crowd" id="crowd" aria-hidden="true"></div>
+      <div class="stats-row" id="statsRow" hidden></div>
       <div class="listeners" id="listeners" hidden><i></i><span id="listenersText"></span></div>
+      <div class="buyers" id="buyers" hidden></div>
       <button type="button" class="access" id="access" hidden></button>
       <button id="heroPlay" class="hero-play" type="button">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
@@ -32,8 +44,12 @@
       </button>
     </header>
 
+    <!-- Cinta de géneros -->
+    <div class="marquee" id="marquee" aria-hidden="true" hidden><div class="marquee-track" id="marqueeTrack"></div></div>
+
     <!-- Oferta -->
     <section class="offer" id="offer" hidden>
+      <div class="countdown" id="countdown" hidden></div>
       <div class="prices" id="prices" hidden>
         <span class="before" id="priceBefore"></span>
         <span class="now" id="priceNow"></span>
@@ -51,6 +67,19 @@
     <section class="card" id="featuresCard" hidden>
       <h2>¿Qué incluye?</h2>
       <ul class="features" id="features"></ul>
+    </section>
+
+    <!-- Ideal para -->
+    <section class="card uses">
+      <h2>Ideal para</h2>
+      <div class="uses-grid">
+        <div class="use"><span>🏪</span>Tu negocio</div>
+        <div class="use"><span>🚗</span>El carro</div>
+        <div class="use"><span>🎉</span>Fiestas</div>
+        <div class="use"><span>💪</span>El gym</div>
+        <div class="use"><span>💼</span>Trabajar</div>
+        <div class="use"><span>😌</span>Relajarte</div>
+      </div>
     </section>
 
     <!-- Pestañas Música / Videos -->
@@ -129,6 +158,11 @@
       <span id="tDur">0:00</span>
     </div>
   </footer>
+
+  <!-- Botón fijo para desbloquear -->
+  <div class="cta-bar" id="ctaBar" hidden>
+    <button type="button" class="cta-btn" id="ctaBtn">🔓 Desbloquea TODO por <b id="ctaPrice"></b></button>
+  </div>
 
   <!-- Comprobante de pago -->
   <div class="modal" id="paywall" hidden role="dialog" aria-modal="true" aria-labelledby="pwTitle">
