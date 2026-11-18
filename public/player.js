@@ -91,6 +91,7 @@
       nav.appendChild(b);
     }
     nav.hidden = false;
+    $("stationsLabel").hidden = false;
   }
 
   function stationName(id) {
@@ -574,6 +575,7 @@
       nav.appendChild(b);
     }
     nav.hidden = false;
+    $("videoFoldersLabel").hidden = false;
   }
 
   let vFolderSeq = 0;
