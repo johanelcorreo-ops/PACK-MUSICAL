@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>Comprobantes · Panel</title>
+  <link rel="icon" href="/portada.jpg" />
+  <style>
+    :root { --bg:#0d0820; --card:#18122e; --line:#ffffff1f; --text:#f6f4ff; --muted:#a9a3c4;
+      --ok:#25d366; --wait:#ffd84d; --bad:#ff5a5a; --block:#ff8a3d; --accent:#8b5cf6; }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 20px 16px 60px; }
+    h1 { font-size: 1.4rem; margin: 0 0 4px; }
+    .muted { color: var(--muted); font-size: .9rem; }
+    .login { max-width: 360px; margin: 18vh auto 0; display: grid; gap: 10px; }
+    input, button { font: inherit; }
+    input { background:#0008; border:1px solid #ffffff33; color:var(--text); border-radius:12px; padding:13px 14px; }
+    button { cursor:pointer; border:0; border-radius:12px; padding:12px 14px; font-weight:700; }
+    .primary { background:#fff; color:#120c26; }
+    .err { color: var(--bad); min-height: 1.2em; }
+    .bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:16px 0; }
+    .filters button { background:#ffffff12; color:var(--text); border:1px solid #ffffff2a; padding:8px 12px; }
+    .filters button.on { background:#fff; color:#120c26; }
+    .stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap:8px; margin: 12px 0; }
+    .stat { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px; }
+    .stat b { display:block; font-size:1.4rem; }
+    .list { display:grid; gap:10px; }
+    .item { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; display:grid; gap:8px; }
+    .top { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap; }
+    .name { font-weight:800; font-size:1.05rem; }
+    .pill { font-size:.78rem; font-weight:800; padding:4px 10px; border-radius:999px; text-transform:uppercase; letter-spacing:.04em; }
+    .aprobado { background:#25d36626; color:var(--ok); } .pendiente { background:#ffd84d22; color:var(--wait); }
+    .rechazado { background:#ff5a5a22; color:var(--bad); } .bloqueado { background:#ff8a3d22; color:var(--block); }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap:6px 14px; font-size:.92rem; }
+    .grid span { color: var(--muted); display:block; font-size:.75rem; }
+    .reason { color: var(--wait); font-size:.9rem; }
+    .actions { display:flex; flex-wrap:wrap; gap:8px; }
+    .a-ok { background:var(--ok); color:#05290f; } .a-block { background:#ffffff14; color:var(--block); border:1px solid #ff8a3d66; }
+    .a-view { background:#ffffff14; color:var(--text); border:1px solid #ffffff33; }
+    .receipt { max-width: 100%; max-height: 520px; border-radius: 12px; justify-self: start; background:#fff; }
+    details { font-size:.85rem; color: var(--muted); } pre { white-space: pre-wrap; margin: 6px 0 0; }
+    a { color: #8ff0b4; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <form class="login" id="login">
+      <h1>🔐 Panel de comprobantes</h1>
+      <p class="muted">Escribe la contraseña de administrador (ADMIN_PASSWORD en Render).</p>
+      <input type="password" id="pass" placeholder="Contraseña" autocomplete="current-password" />
+      <button class="primary" type="submit">Entrar</button>
+      <p class="err" id="loginErr"></p>
+    </form>
+
+    <div id="panel" hidden>
+      <h1>Comprobantes de pago</h1>
+      <p class="muted">Los que cumplen todo se aprueban solos. Revisa los <b>pendientes</b> contra tu Nequi/banco y aprueba o bloquea. Si alguien hizo trampa, <b>Bloquear</b> le quita el acceso al instante.</p>
+      <div class="stats" id="stats"></div>
+      <div class="bar filters" id="filters">
+        <button data-f="pendiente" class="on">Pendientes</button>
+        <button data-f="aprobado">Aprobados</button>
+        <button data-f="rechazado">Rechazados</button>
+        <button data-f="bloqueado">Bloqueados</button>
+        <button data-f="">Todos</button>
+        <button id="reload" type="button">↻ Actualizar</button>
+      </div>
+      <input id="q" placeholder="Buscar por nombre, teléfono, referencia o código…" style="width:100%;margin-bottom:12px" />
+      <div class="list" id="list"></div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  let pass = "";
+  try { pass = sessionStorage.getItem("mymAdmin") || ""; } catch (_) {}
+  let rows = [];
+  let filtro = "pendiente";
+  const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const pesos = (n) => (n == null ? "—" : "$" + Number(n).toLocaleString("es-CO"));
+  const fecha = (s) => (s ? new Date(s).toLocaleString("es-CO", { dateStyle: "medium", timeStyle: "short" }) : "—");
+
+  async function api(path, opts = {}) {
+    const res = await fetch(path, { ...opts, headers: { ...(opts.headers || {}), "x-admin-password": pass } });
+    if (res.status === 401) { showLogin("Contraseña incorrecta"); throw new Error("401"); }
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Error " + res.status);
+    return res;
+  }
+
+  function showLogin(msg) {
+    $("panel").hidden = true;
+    $("login").hidden = false;
+    $("loginErr").textContent = msg || "";
+  }
+
+  $("login").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    pass = $("pass").value;
+    try { sessionStorage.setItem("mymAdmin", pass); } catch (_) {}
+    await load();
+  });
+
+  async function load() {
+    try {
+      rows = await (await api("/api/admin/comprobantes")).json();
+      $("login").hidden = true;
+      $("panel").hidden = false;
+      render();
+    } catch (err) {
+      if (err.message !== "401") showLogin(err.message);
+    }
+  }
+
+  function render() {
+    const count = (s) => rows.filter((r) => r.estado === s).length;
+    const ventas = rows.filter((r) => r.estado === "aprobado").reduce((a, r) => a + (r.valor || 0), 0);
+    $("stats").innerHTML =
+      `<div class="stat"><span class="muted">Pendientes</span><b>${count("pendiente")}</b></div>` +
+      `<div class="stat"><span class="muted">Aprobados</span><b>${count("aprobado")}</b></div>` +
+      `<div class="stat"><span class="muted">Rechazados/bloqueados</span><b>${count("rechazado") + count("bloqueado")}</b></div>` +
+      `<div class="stat"><span class="muted">Total aprobado</span><b>${pesos(ventas)}</b></div>`;
+    const q = $("q").value.trim().toLowerCase();
+    const list = rows.filter((r) => (!filtro || r.estado === filtro) &&
+      (!q || [r.nombre, r.telefono, r.referencia, r.codigo].join(" ").toLowerCase().includes(q)));
+    $("list").innerHTML = list.length ? "" : '<p class="muted">No hay comprobantes aquí.</p>';
+    for (const r of list) {
+      const el = document.createElement("div");
+      el.className = "item";
+      const wa = String(r.telefono || "").replace(/\D/g, "");
+      el.innerHTML = `
+        <div class="top">
+          <div><div class="name">${esc(r.nombre)}</div>
+            <div class="muted">${wa ? `<a href="https://wa.me/${wa.length === 10 ? "57" + wa : wa}" target="_blank" rel="noopener">${esc(r.telefono)}</a>` : esc(r.telefono)} · ${fecha(r.created_at)}</div></div>
+          <span class="pill ${esc(r.estado)}">${esc(r.estado)}</span>
+        </div>
+        <div class="grid">
+          <div><span>Referencia</span>${esc(r.referencia || "—")}</div>
+          <div><span>Valor</span>${pesos(r.valor)}</div>
+          <div><span>Fecha del pago</span>${esc(r.fecha_pago || "—")}</div>
+          <div><span>Banco</span>${esc(r.banco || "—")}</div>
+          <div><span>Código de acceso</span>${esc(r.codigo)}</div>
+        </div>
+        ${r.motivo ? `<div class="reason">⚠️ ${esc(r.motivo)}</div>` : ""}
+        <div class="actions">
+          <button class="a-view" data-act="ver">🧾 Ver comprobante</button>
+          ${r.estado !== "aprobado" ? '<button class="a-ok" data-act="aprobado">✅ Aprobar</button>' : ""}
+          ${r.estado !== "bloqueado" ? '<button class="a-block" data-act="bloqueado">⛔ Bloquear</button>' : ""}
+        </div>
+        <details><summary>Texto leído del comprobante</summary><pre>${esc(r.texto_leido || "(vacío)")}</pre></details>`;
+      el.querySelector('[data-act="ver"]').addEventListener("click", async (ev) => {
+        ev.target.disabled = true;
+        try {
+          const blob = await (await api("/api/admin/imagen/" + encodeURIComponent(r.id))).blob();
+          const img = document.createElement("img");
+          img.className = "receipt";
+          img.src = URL.createObjectURL(blob);
+          ev.target.closest(".actions").after(img);
+          ev.target.remove();
+        } catch (err) { ev.target.disabled = false; alert(err.message); }
+      });
+      for (const b of el.querySelectorAll('[data-act="aprobado"],[data-act="bloqueado"]')) {
+        b.addEventListener("click", async () => {
+          const estado = b.dataset.act;
+          if (estado === "bloqueado" && !confirm(`¿Bloquear a ${r.nombre}? Pierde el acceso de inmediato.`)) return;
+          b.disabled = true;
+          try {
+            await api("/api/admin/estado", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: r.id, estado }) });
+            r.estado = estado;
+            if (estado === "aprobado") r.motivo = null;
+            render();
+          } catch (err) { b.disabled = false; alert(err.message); }
+        });
+      }
+      $("list").appendChild(el);
+    }
+  }
+
+  for (const b of $("filters").querySelectorAll("[data-f]")) {
+    b.addEventListener("click", () => {
+      filtro = b.dataset.f;
+      for (const x of $("filters").querySelectorAll("[data-f]")) x.classList.toggle("on", x === b);
+      render();
+    });
+  }
+  $("reload").addEventListener("click", load);
+  $("q").addEventListener("input", render);
+  if (pass) load();
+})();
+</script>
+</body>
+</html>

@@ -232,6 +232,12 @@
 
   function load(index) {
     if (!queue.length) return;
+    const target = queue[(index + queue.length) % queue.length];
+    if (!allowed(target.id)) { // ya usó su canción gratis: pedir comprobante
+      if (!audio.paused) audio.pause();
+      openPaywall();
+      return;
+    }
     qi = (index + queue.length) % queue.length;
     current = queue[qi];
     audio.src = `/stream/${current.id}`;
@@ -328,6 +334,7 @@
   audio.addEventListener("ended", next);
   audio.addEventListener("error", () => {
     if (!current) return;
+    if (acc.paywall && !acc.unlocked) { openPaywall(); return; } // el servidor pidió comprobante
     errorsInARow++;
     if (errorsInARow > Math.min(5, queue.length)) {
       $("error").textContent = "No se pudo reproducir la música. Intenta recargar la página.";
@@ -451,6 +458,12 @@
 
   function loadVideo(i) {
     if (!vQueue.length) return;
+    const target = vQueue[(i + vQueue.length) % vQueue.length];
+    if (!allowed(target.id)) {
+      stopVideo();
+      openPaywall();
+      return;
+    }
     vi = (i + vQueue.length) % vQueue.length;
     vCurrent = vQueue[vi];
     $("videoTitle").textContent = vCurrent.name;
@@ -508,6 +521,7 @@
   bg.addEventListener("ended", () => { if (bgActive) nextVideo(); });
   function onVideoError() {
     if (!vCurrent || !videoWanted) return;
+    if (acc.paywall && !acc.unlocked) { stopVideo(); openPaywall(); return; }
     if (++vErrors > Math.min(5, vQueue.length)) return;
     setTimeout(nextVideo, 500);
   }
@@ -633,6 +647,208 @@
     $("videosCard").hidden = tab !== "videos";
   }
   for (const b of $("tabs").children) b.addEventListener("click", () => showTab(b.dataset.tab));
+
+  // ---------- Acceso: 1 canción gratis y luego comprobante de pago ----------
+  let acc = { paywall: false, unlocked: true, trialId: null, codigo: null, estado: null };
+  let pollTimer = 0;
+
+  function allowed(id) {
+    if (!acc.paywall || acc.unlocked) return true;
+    if (!acc.trialId) { // esta es su canción (o video) de prueba
+      acc.trialId = id;
+      updateAccess();
+      return true;
+    }
+    return acc.trialId === id;
+  }
+
+  function updateAccess() {
+    const el = $("access");
+    if (!acc.paywall) { el.hidden = true; $("payBtn").hidden = true; return; }
+    el.hidden = false;
+    el.classList.toggle("ok", acc.unlocked);
+    if (acc.unlocked) el.textContent = "✅ Acceso completo";
+    else if (acc.estado === "pendiente") el.textContent = "⏳ Tu comprobante está en revisión";
+    else if (acc.trialId) el.textContent = "🔒 Sube tu comprobante para escuchar todo";
+    else el.textContent = "🎁 Escucha 1 canción gratis";
+    $("payBtn").hidden = acc.unlocked;
+    if (!acc.unlocked) $("offer").hidden = false; // siempre se ve el botón "Ya pagué"
+  }
+
+  async function refreshAccess() {
+    try {
+      const r = await (await fetch("/api/acceso", { cache: "no-store" })).json();
+      const wasLocked = acc.paywall && !acc.unlocked;
+      acc = { ...acc, ...r, trialId: r.trialId || acc.trialId };
+      updateAccess();
+      if (wasLocked && acc.unlocked) showResult("ok", `✅ <b>¡Pago verificado!</b> Ya puedes escuchar toda la música.`, true);
+      clearInterval(pollTimer);
+      if (acc.paywall && !acc.unlocked && acc.estado === "pendiente") pollTimer = setInterval(refreshAccess, 15000);
+    } catch (_) {}
+  }
+
+  function openPaywall() {
+    if (!acc.paywall || acc.unlocked) return;
+    $("pwPrice").textContent = cfg.priceNow || "el pack";
+    $("pwInfo").textContent = cfg.paymentInfo ? ` a: ${cfg.paymentInfo}` : "";
+    $("pwSub").textContent = acc.trialId
+      ? "Ya escuchaste tu canción de prueba. Para seguir escuchando todo:"
+      : "Para escuchar toda la música:";
+    if (cfg.whatsappUrl) { $("pwHelp").href = cfg.whatsappUrl; $("pwHelp").hidden = false; }
+    if (acc.estado === "pendiente" && acc.codigo) {
+      showResult("wait", pendingText(acc.codigo));
+    }
+    $("paywall").hidden = false;
+    document.body.style.overflow = "hidden";
+  }
+  function closePaywall() {
+    $("paywall").hidden = true;
+    document.body.style.overflow = "";
+  }
+  $("pwClose").addEventListener("click", closePaywall);
+  $("paywall").addEventListener("click", (e) => { if (e.target === $("paywall")) closePaywall(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("paywall").hidden) closePaywall(); });
+  $("payBtn").addEventListener("click", openPaywall);
+  $("access").addEventListener("click", () => { if (!acc.unlocked) openPaywall(); });
+
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const pendingText = (codigo) =>
+    `⏳ <b>Recibimos tu comprobante.</b> Lo estamos revisando y se desbloquea solo apenas lo confirmemos (no cierres la página).` +
+    `<br>Tu código: <span class="code">${esc(codigo)}</span>`;
+
+  function showResult(kind, html, withButton) {
+    const box = $("pwResult");
+    box.className = "pw-result " + kind;
+    box.innerHTML = html + (withButton ? '<button type="button" class="btn btn-wa" id="pwDone">Empezar a escuchar 🎶</button>' : "");
+    box.hidden = false;
+    if (withButton) {
+      $("pwForm").hidden = true;
+      $("pwCode").hidden = true;
+      $("pwDone").addEventListener("click", closePaywall);
+    }
+  }
+
+  // La imagen se achica en el celular antes de enviarla (más rápido y liviano, y se lee igual).
+  function prepararImagen(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const max = 1600;
+        const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.naturalWidth * s);
+        c.height = Math.round(img.naturalHeight * s);
+        const ctx = c.getContext("2d");
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("imagen")); };
+      img.src = url;
+    });
+  }
+
+  let imagenLista = null;
+  $("pwFile").addEventListener("change", async () => {
+    const f = $("pwFile").files[0];
+    imagenLista = null;
+    $("pwPreview").hidden = true;
+    if (!f) return;
+    $("pwFileText").textContent = "Procesando imagen…";
+    try {
+      imagenLista = await prepararImagen(f);
+      $("pwPreview").src = imagenLista;
+      $("pwPreview").hidden = false;
+      $("pwFileText").textContent = "📎 Cambiar imagen";
+    } catch (_) {
+      $("pwFileText").textContent = "📎 Esa imagen no se pudo abrir. Elige otra";
+    }
+  });
+
+  $("pwForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const nombre = $("pwName").value.trim();
+    const telefono = $("pwPhone").value.trim();
+    if (!nombre || !telefono) return showResult("bad", "Escribe tu nombre y tu WhatsApp.");
+    if (!imagenLista) return showResult("bad", "Elige la captura de pantalla del comprobante.");
+    $("pwSend").disabled = true;
+    $("pwSend").textContent = "Leyendo comprobante…";
+    $("pwResult").hidden = true;
+    try {
+      const res = await fetch("/api/comprobante", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre, telefono, imagen: imagenLista }),
+      });
+      const r = await res.json();
+      if (!res.ok) throw new Error(r.error || "Error");
+      if (r.estado === "aprobado") {
+        acc.unlocked = true;
+        acc.codigo = r.codigo;
+        acc.estado = "aprobado";
+        updateAccess();
+        showResult(
+          "ok",
+          `✅ <b>¡Pago verificado!</b> Ya puedes escuchar toda la música.<br>` +
+            `Tu código de acceso: <span class="code">${esc(r.codigo)}</span><br>` +
+            `<small>Guárdalo: con él entras desde otro celular o computador.</small>`,
+          true
+        );
+      } else if (r.estado === "pendiente") {
+        acc.codigo = r.codigo;
+        acc.estado = "pendiente";
+        updateAccess();
+        showResult("wait", pendingText(r.codigo));
+        clearInterval(pollTimer);
+        pollTimer = setInterval(refreshAccess, 15000);
+      } else {
+        showResult("bad", `❌ <b>${esc(r.motivo || "No pudimos aceptar este comprobante")}.</b><br>Si crees que es un error, escríbenos por WhatsApp.`);
+      }
+    } catch (err) {
+      showResult("bad", esc(err.message || "No se pudo enviar. Revisa tu conexión e intenta de nuevo."));
+    } finally {
+      $("pwSend").disabled = false;
+      $("pwSend").textContent = "Enviar comprobante";
+    }
+  });
+
+  $("codeForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const codigo = $("codeInput").value.trim();
+    if (!codigo) return;
+    $("codeMsg").textContent = "Revisando…";
+    try {
+      const res = await fetch("/api/codigo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codigo }),
+      });
+      const r = await res.json();
+      if (!res.ok) throw new Error(r.error || "Error");
+      if (r.estado === "aprobado") {
+        $("codeMsg").textContent = "";
+        acc.unlocked = true;
+        acc.estado = "aprobado";
+        updateAccess();
+        showResult("ok", "✅ <b>¡Listo!</b> Ya puedes escuchar toda la música en este dispositivo.", true);
+      } else if (r.estado === "pendiente") {
+        $("codeMsg").textContent = "Ese comprobante todavía está en revisión. Se desbloquea solo cuando lo aprobemos.";
+        acc.estado = "pendiente";
+        updateAccess();
+        clearInterval(pollTimer);
+        pollTimer = setInterval(refreshAccess, 15000);
+      } else {
+        $("codeMsg").textContent = "Ese código no está activo. Escríbenos por WhatsApp.";
+      }
+    } catch (err) {
+      $("codeMsg").textContent = err.message;
+    }
+  });
+
+  await refreshAccess();
 
   // ---------- Inicio ----------
   const hasMusic = (cfg.stations || []).length > 0;
