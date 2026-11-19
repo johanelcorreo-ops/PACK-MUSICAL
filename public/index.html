@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>MÚSICA Y MÁS</title>
   <meta name="description" content="Escucha, busca y disfruta toda la música. Todos los géneros." />
-  <meta name="theme-color" content="#120a30" />
+  <meta name="theme-color" content="#100e14" />
   <meta property="og:title" content="MÚSICA Y MÁS" />
   <meta property="og:description" content="Escucha, busca y disfruta toda la música. Todos los géneros." />
   <meta property="og:image" content="/og.jpg" />
@@ -14,113 +14,98 @@
   <link rel="apple-touch-icon" href="/portada.jpg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <!-- Fondo animado: luces y notas musicales -->
-  <div class="fx" id="fx" aria-hidden="true"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span></div>
-  <!-- Músicos a los lados (computador) -->
-  <aside class="stage stage-left" id="stageLeft" aria-hidden="true"></aside>
-  <aside class="stage stage-right" id="stageRight" aria-hidden="true"></aside>
-
-  <main class="app">
-    <!-- Portada -->
-    <header class="hero">
-      <div class="cover-wrap">
-        <span class="vinyl" aria-hidden="true"></span>
-        <img class="cover" src="/portada.jpg" alt="Portada de MÚSICA Y MÁS" width="1000" height="1000" />
-      </div>
-      <h1 id="title">MÚSICA Y MÁS</h1>
-      <p class="subtitle" id="subtitle">Escucha, busca y disfruta toda la música</p>
-      <div class="crowd" id="crowd" aria-hidden="true"></div>
-      <div class="stats-row" id="statsRow" hidden></div>
-      <div class="listeners" id="listeners" hidden><i></i><span id="listenersText"></span></div>
-      <div class="buyers" id="buyers" hidden></div>
-      <button type="button" class="access" id="access" hidden></button>
-      <button id="heroPlay" class="hero-play" type="button">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-        <span>Escuchar ahora</span>
-      </button>
-    </header>
-
-    <!-- Cinta de géneros -->
-    <div class="marquee" id="marquee" aria-hidden="true" hidden><div class="marquee-track" id="marqueeTrack"></div></div>
-
-    <!-- Oferta -->
-    <section class="offer" id="offer" hidden>
-      <div class="countdown" id="countdown" hidden></div>
-      <div class="prices" id="prices" hidden>
-        <span class="before" id="priceBefore"></span>
-        <span class="now" id="priceNow"></span>
-        <span class="tag" id="discount" hidden></span>
-      </div>
-      <a class="btn btn-wa" id="waBtn" href="#" target="_blank" rel="noopener" hidden>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg>
-        <span>Comprar por WhatsApp</span>
-      </a>
-      <a class="btn btn-buy" id="buyBtn" href="#" target="_blank" rel="noopener" hidden>Comprar el pack</a>
-      <button type="button" class="btn btn-pay" id="payBtn" hidden>📎 Ya pagué: subir comprobante</button>
-    </section>
-
-    <!-- Qué incluye -->
-    <section class="card" id="featuresCard" hidden>
-      <h2>¿Qué incluye?</h2>
-      <ul class="features" id="features"></ul>
-    </section>
-
-    <!-- Ideal para -->
-    <section class="card uses">
-      <h2>Ideal para</h2>
-      <div class="uses-grid">
-        <div class="use"><span>🏪</span>Tu negocio</div>
-        <div class="use"><span>🚗</span>El carro</div>
-        <div class="use"><span>🎉</span>Fiestas</div>
-        <div class="use"><span>💪</span>El gym</div>
-        <div class="use"><span>💼</span>Trabajar</div>
-        <div class="use"><span>😌</span>Relajarte</div>
-      </div>
-    </section>
-
-    <!-- Pestañas Música / Videos -->
-    <nav class="tabs" id="tabs" hidden>
-      <button type="button" class="on" data-tab="music">🎵 Música</button>
-      <button type="button" data-tab="videos">🎬 Videos</button>
+  <main class="app" id="inicio">
+    <nav class="site-nav" aria-label="Navegación principal">
+      <a class="brand" href="#inicio"><img src="/portada.jpg" alt="" width="36" height="36" />MÚSICA Y MÁS</a>
+      <div><a href="#catalogo">Catálogo</a><a id="offerLink" href="#offer" hidden>Acceso completo</a></div>
     </nav>
-
-    <!-- Videos -->
-    <section class="card videos" id="videosCard" hidden>
-      <h2>Videos</h2>
-      <p class="pick-label" id="videoFoldersLabel" hidden>Elige una categoría</p>
-      <nav class="stations" id="videoFolders" hidden></nav>
-      <div class="video-wrap">
-        <video id="video" playsinline webkit-playsinline preload="metadata" controls controlslist="nodownload" disablepictureinpicture="false" poster="/og.jpg"></video>
-      </div>
-      <div class="video-now">
-        <div class="video-title" id="videoTitle">Elige un video</div>
-        <button type="button" class="audio-only" id="audioOnly">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0-9 9v6a3 3 0 0 0 3 3h2v-8H5v-1a7 7 0 0 1 14 0v1h-3v8h2a3 3 0 0 0 3-3v-6a9 9 0 0 0-9-9z"/></svg>
-          <span>Escuchar con la pantalla apagada</span>
+    <header class="hero">
+      <div class="hero-content">
+        <h1 id="title">MÚSICA Y MÁS</h1>
+        <p class="subtitle" id="subtitle">Escucha, busca y disfruta toda la música</p>
+        <div class="stats-row" id="statsRow" hidden></div>
+        <div class="listeners" id="listeners" hidden><i></i><span id="listenersText"></span></div>
+        <div class="buyers" id="buyers" hidden></div>
+        <button type="button" class="access" id="access" hidden></button>
+        <button id="heroPlay" class="hero-play" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          <span>Escuchar ahora</span>
         </button>
       </div>
-      <p class="list-info" id="videoInfo">Cargando videos…</p>
-      <ol class="songs" id="videoList"></ol>
-    </section>
+    </header>
 
-    <!-- Música -->
-    <section class="card music" id="musicCard">
-      <h2>Escucha la música</h2>
-      <p class="pick-label" id="stationsLabel" hidden>Elige un género</p>
-      <nav class="stations" id="stations" hidden></nav>
-      <label class="search">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2a8 8 0 0 1 6.3 12.9l5.4 5.4-1.4 1.4-5.4-5.4A8 8 0 1 1 10 2zm0 2a6 6 0 1 0 0 12 6 6 0 0 0 0-12z"/></svg>
-        <input id="search" type="search" placeholder="Buscar canción o artista…" autocomplete="off" enterkeyhint="search" />
-      </label>
-      <p class="list-info" id="listInfo">Cargando canciones…</p>
-      <ol class="songs" id="songs"></ol>
-    </section>
+    <div class="library-layout" id="catalogo">
+      <div class="library">
+        <!-- Pestañas Música / Videos -->
+        <nav class="tabs" id="tabs" hidden>
+          <button type="button" class="on" data-tab="music">Música</button>
+          <button type="button" data-tab="videos">Videos</button>
+        </nav>
 
-    <p class="error" id="error" hidden></p>
+        <!-- Videos -->
+        <section class="card videos" id="videosCard" hidden>
+          <h2>Videos</h2>
+          <p class="pick-label" id="videoFoldersLabel" hidden>Elige una categoría</p>
+          <nav class="stations" id="videoFolders" aria-label="Categorías de video" hidden></nav>
+          <div class="video-wrap">
+            <video id="video" playsinline webkit-playsinline preload="metadata" controls controlslist="nodownload" disablepictureinpicture="false" poster="/og.jpg"></video>
+          </div>
+          <div class="video-now">
+            <div class="video-title" id="videoTitle">Elige un video</div>
+            <button type="button" class="audio-only" id="audioOnly">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0-9 9v6a3 3 0 0 0 3 3h2v-8H5v-1a7 7 0 0 1 14 0v1h-3v8h2a3 3 0 0 0 3-3v-6a9 9 0 0 0-9-9z"/></svg>
+              <span>Escuchar con la pantalla apagada</span>
+            </button>
+          </div>
+          <p class="list-info" id="videoInfo">Cargando videos…</p>
+          <ol class="songs" id="videoList"></ol>
+        </section>
+
+        <!-- Música -->
+        <section class="card music" id="musicCard">
+          <h2>Escucha la música</h2>
+          <p class="pick-label" id="stationsLabel" hidden>Elige un género</p>
+          <nav class="stations" id="stations" aria-label="Géneros musicales" hidden></nav>
+          <label class="search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2a8 8 0 0 1 6.3 12.9l5.4 5.4-1.4 1.4-5.4-5.4A8 8 0 1 1 10 2zm0 2a6 6 0 1 0 0 12 6 6 0 0 0 0-12z"/></svg>
+            <input id="search" type="search" aria-label="Buscar canción o artista" placeholder="Buscar canción o artista…" autocomplete="off" enterkeyhint="search" />
+          </label>
+          <p class="list-info" id="listInfo">Cargando canciones…</p>
+          <ol class="songs" id="songs"></ol>
+        </section>
+
+        <p class="error" id="error" role="alert" hidden></p>
+      </div>
+      <aside class="details">
+        <!-- Oferta -->
+        <section class="offer" id="offer" hidden>
+          <h2>Acceso completo</h2>
+          <div class="countdown" id="countdown" hidden></div>
+          <div class="prices" id="prices" hidden>
+            <span class="before" id="priceBefore"></span>
+            <span class="now" id="priceNow"></span>
+            <span class="tag" id="discount" hidden></span>
+          </div>
+          <a class="btn btn-wa" id="waBtn" href="#" target="_blank" rel="noopener" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg>
+            <span>Comprar por WhatsApp</span>
+          </a>
+          <a class="btn btn-buy" id="buyBtn" href="#" target="_blank" rel="noopener" hidden>Comprar el pack</a>
+          <button type="button" class="btn btn-pay" id="payBtn" hidden>Subir comprobante</button>
+        </section>
+
+        <!-- Qué incluye -->
+        <section class="card" id="featuresCard" hidden>
+          <h2>¿Qué incluye?</h2>
+          <ul class="features" id="features"></ul>
+        </section>
+
+      </aside>
+    </div>
   </main>
 
   <!-- WhatsApp flotante -->
@@ -161,7 +146,7 @@
 
   <!-- Botón fijo para desbloquear -->
   <div class="cta-bar" id="ctaBar" hidden>
-    <button type="button" class="cta-btn" id="ctaBtn">🔓 Desbloquea TODO por <b id="ctaPrice"></b></button>
+    <button type="button" class="cta-btn" id="ctaBtn"><span id="ctaLabel">Desbloquear el catálogo</span> <b id="ctaPrice"></b></button>
   </div>
 
   <!-- Comprobante de pago -->
