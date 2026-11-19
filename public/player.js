@@ -62,7 +62,11 @@
     $("buyBtn").textContent = cfg.buyText || "Comprar el pack";
     $("buyBtn").hidden = false;
   }
-  $("offer").hidden = !(cfg.priceNow || cfg.whatsappUrl || cfg.buyUrl);
+  function showOffer(show) {
+    $("offer").hidden = !show;
+    $("offerLink").hidden = !show;
+  }
+  showOffer(Boolean(cfg.priceNow || cfg.whatsappUrl || cfg.buyUrl));
 
   if (cfg.features && cfg.features.length) {
     for (const f of cfg.features) {
@@ -75,61 +79,7 @@
 
   document.body.classList.add("no-player");
 
-  // ---------- Lo llamativo: músicos, notas, cifras reales, cinta y oferta ----------
-  const MUSICOS = [
-    ["cantante", "#ffd84d"], ["dj", "#25d3a6"], ["acordeonero", "#8b5cf6"],
-    ["guitarrista", "#ff4fa3"], ["trompetista", "#ff8a3d"], ["bailarina", "#5ab4ff"],
-  ];
-  const SVGNS = "http://www.w3.org/2000/svg";
-
-  function performer(i) {
-    const [id, color] = MUSICOS[i];
-    const el = document.createElement("span");
-    el.className = "performer";
-    el.style.color = color;
-    const img = (cfg.artistas || [])[i];
-    if (img) {
-      const im = document.createElement("img");
-      im.src = img;
-      im.alt = "";
-      im.loading = "lazy";
-      el.appendChild(im);
-    } else {
-      const svg = document.createElementNS(SVGNS, "svg");
-      svg.setAttribute("viewBox", "0 0 200 300");
-      const use = document.createElementNS(SVGNS, "use");
-      use.setAttribute("href", "/musicos.svg#" + id);
-      svg.appendChild(use);
-      el.appendChild(svg);
-    }
-    return el;
-  }
-
-  function renderPerformers() {
-    for (let i = 0; i < MUSICOS.length; i++) {
-      $(i < 3 ? "stageLeft" : "stageRight").appendChild(performer(i));
-      $("crowd").appendChild(performer(i));
-    }
-  }
-
-  function spawnNotes() {
-    const chars = ["♪", "♫", "♬", "♩"];
-    const colors = ["#ffd84d", "#ff4fa3", "#8b5cf6", "#25d3a6", "#ffffff"];
-    for (let i = 0; i < 14; i++) {
-      const n = document.createElement("span");
-      n.className = "note";
-      n.textContent = chars[i % chars.length];
-      n.style.left = Math.random() * 100 + "%";
-      n.style.fontSize = 14 + Math.random() * 22 + "px";
-      n.style.color = colors[i % colors.length];
-      n.style.animationDuration = 12 + Math.random() * 14 + "s";
-      n.style.animationDelay = -Math.random() * 20 + "s";
-      $("fx").appendChild(n);
-    }
-  }
-
-  const fmtNum = (n) => Number(n).toLocaleString("es-CO");
-
+  // ---------- Cifras y oferta ----------
   async function loadStats() {
     try {
       const s = await (await fetch("/api/stats", { cache: "no-store" })).json();
@@ -159,24 +109,6 @@
     } catch (_) {}
   }
 
-  function renderMarquee() {
-    const names = [...(cfg.stations || []), ...(cfg.videoFolders || [])].map((s) => s.name);
-    if (names.length < 2) return;
-    const track = $("marqueeTrack");
-    for (let rep = 0; rep < 2; rep++) { // dos veces para que el giro sea continuo
-      for (const name of names) {
-        const s = document.createElement("span");
-        s.textContent = name;
-        const star = document.createElement("i");
-        star.textContent = " ★";
-        s.appendChild(star);
-        track.appendChild(s);
-      }
-    }
-    track.style.animationDuration = Math.max(20, names.length * 3.5) + "s";
-    $("marquee").hidden = false;
-  }
-
   function startCountdown() {
     const end = Date.parse(cfg.offerEnds || "");
     if (!end || end <= Date.now()) return;
@@ -204,29 +136,32 @@
     $("ctaBar").hidden = !show;
     document.body.classList.toggle("has-cta", show);
     if (show) {
-      $("ctaPrice").textContent = cfg.priceNow || "";
+      $("ctaPrice").textContent = cfg.priceNow ? `· ${cfg.priceNow}` : "";
       $("ctaBtn").onclick = onClick;
     }
   }
 
-  renderPerformers();
-  spawnNotes();
-  renderMarquee();
   startCountdown();
   loadStats();
 
   // ---------- Géneros ----------
   function renderStations() {
     const list = cfg.stations || [];
-    if (list.length < 2) return;
+    if (!list.length) return;
     const nav = $("stations");
     nav.innerHTML = "";
     for (const st of list) {
       const b = document.createElement("button");
       b.type = "button";
-      b.textContent = st.name;
+      const cover = document.createElement("span");
+      cover.className = "playlist-cover";
+      cover.setAttribute("aria-hidden", "true");
+      const label = document.createElement("span");
+      label.textContent = st.name;
+      b.append(cover, label);
       b.dataset.id = st.id;
-      b.className = st.id === station ? "on" : "";
+      b.classList.toggle("on", st.id === station);
+      b.setAttribute("aria-pressed", String(st.id === station));
       b.addEventListener("click", () => selectStation(st.id));
       nav.appendChild(b);
     }
@@ -241,7 +176,11 @@
 
   async function selectStation(id) {
     station = id;
-    for (const b of $("stations").children) b.className = b.dataset.id === id ? "on" : "";
+    for (const b of $("stations").children) {
+      const selected = b.dataset.id === id;
+      b.classList.toggle("on", selected);
+      b.setAttribute("aria-pressed", String(selected));
+    }
     $("search").value = "";
     $("listInfo").textContent = "Cargando canciones…";
     $("songs").innerHTML = "";
@@ -292,8 +231,13 @@
         st.textContent = t.stationName;
         name.appendChild(st);
       }
-      li.append(n, name);
-      li.addEventListener("click", () => playFrom(shown, i));
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "song-button";
+      n.setAttribute("aria-hidden", "true");
+      button.append(n, name);
+      button.addEventListener("click", () => playFrom(shown, i));
+      li.appendChild(button);
       ol.appendChild(li);
     });
 
@@ -717,13 +661,18 @@
 
   function renderVideoFolders() {
     const list = cfg.videoFolders || [];
-    if (list.length < 2) return;
+    if (!list.length) return;
     const nav = $("videoFolders");
     nav.innerHTML = "";
     for (const f of list) {
       const b = document.createElement("button");
       b.type = "button";
-      b.textContent = f.name;
+      const cover = document.createElement("span");
+      cover.className = "playlist-cover";
+      cover.setAttribute("aria-hidden", "true");
+      const label = document.createElement("span");
+      label.textContent = f.name;
+      b.append(cover, label);
       b.dataset.id = f.id;
       b.addEventListener("click", () => selectVideoFolder(f.id));
       nav.appendChild(b);
@@ -735,7 +684,11 @@
   let vFolderSeq = 0;
   async function selectVideoFolder(id) {
     const seq = ++vFolderSeq;
-    for (const b of $("videoFolders").children) b.className = b.dataset.id === id ? "on" : "";
+    for (const b of $("videoFolders").children) {
+      const selected = b.dataset.id === id;
+      b.classList.toggle("on", selected);
+      b.setAttribute("aria-pressed", String(selected));
+    }
     $("videoInfo").textContent = "Cargando videos…";
     $("videoList").innerHTML = "";
     try {
@@ -765,8 +718,13 @@
       const name = document.createElement("span");
       name.className = "name";
       name.textContent = t.name;
-      li.append(n, name);
-      li.addEventListener("click", () => playVideo(vList, i));
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "song-button";
+      n.setAttribute("aria-hidden", "true");
+      button.append(n, name);
+      button.addEventListener("click", () => playVideo(vList, i));
+      li.appendChild(button);
       ol.appendChild(li);
     });
     markVideo();
@@ -810,10 +768,11 @@
       // Sin comprobantes activados: el botón fijo lleva a WhatsApp (si hay número y precio).
       if (cfg.whatsappUrl && cfg.priceNow) {
         updateCta(true, () => window.open(cfg.whatsappUrl, "_blank", "noopener"));
-        $("ctaBtn").firstChild.textContent = "🛒 Compra TODO por ";
+        $("ctaLabel").textContent = "Comprar el pack";
       }
       return;
     }
+    $("ctaLabel").textContent = "Desbloquear el catálogo";
     updateCta(!acc.unlocked, openPaywall);
     el.hidden = false;
     el.classList.toggle("ok", acc.unlocked);
@@ -822,7 +781,7 @@
     else if (acc.trialId) el.textContent = "🔒 Sube tu comprobante para escuchar todo";
     else el.textContent = "🎁 Escucha 1 canción gratis";
     $("payBtn").hidden = acc.unlocked;
-    if (!acc.unlocked) $("offer").hidden = false; // siempre se ve el botón "Ya pagué"
+    if (!acc.unlocked) showOffer(true); // siempre se ve el botón "Ya pagué"
   }
 
   async function refreshAccess() {
@@ -837,6 +796,7 @@
     } catch (_) {}
   }
 
+  let paywallTrigger = null;
   function openPaywall() {
     if (!acc.paywall || acc.unlocked) return;
     $("pwPrice").textContent = cfg.priceNow || "el pack";
@@ -848,12 +808,19 @@
     if (acc.estado === "pendiente" && acc.codigo) {
       showResult("wait", pendingText(acc.codigo));
     }
-    $("paywall").hidden = false;
+    if ($("paywall").hidden) {
+      paywallTrigger = document.activeElement;
+      $("paywall").hidden = false;
+      $("pwClose").focus();
+    }
     document.body.style.overflow = "hidden";
   }
   function closePaywall() {
     $("paywall").hidden = true;
     document.body.style.overflow = "";
+    if (paywallTrigger?.getClientRects().length) paywallTrigger.focus();
+    else $("heroPlay").focus();
+    paywallTrigger = null;
   }
   $("pwClose").addEventListener("click", closePaywall);
   $("paywall").addEventListener("click", (e) => { if (e.target === $("paywall")) closePaywall(); });
