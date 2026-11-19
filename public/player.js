@@ -747,7 +747,10 @@
   for (const b of $("tabs").children) b.addEventListener("click", () => showTab(b.dataset.tab));
 
   // ---------- Acceso: 1 canción gratis y luego comprobante de pago ----------
-  let acc = { paywall: false, unlocked: true, trialId: null, codigo: null, estado: null };
+  let acc = {
+    paywall: Boolean(cfg.paywall), receiptsEnabled: Boolean(cfg.receiptsEnabled),
+    unlocked: !cfg.paywall, trialId: null, codigo: null, estado: null,
+  };
   let pollTimer = 0;
 
   function allowed(id) {
@@ -778,15 +781,17 @@
     el.classList.toggle("ok", acc.unlocked);
     if (acc.unlocked) el.textContent = "✅ Acceso completo";
     else if (acc.estado === "pendiente") el.textContent = "⏳ Tu comprobante está en revisión";
-    else if (acc.trialId) el.textContent = "🔒 Sube tu comprobante para escuchar todo";
+    else if (acc.trialId) el.textContent = "🔒 Desbloquea el catálogo completo";
     else el.textContent = "🎁 Escucha 1 canción gratis";
-    $("payBtn").hidden = acc.unlocked;
-    if (!acc.unlocked) showOffer(true); // siempre se ve el botón "Ya pagué"
+    $("payBtn").hidden = acc.unlocked || !acc.receiptsEnabled;
+    showOffer(Boolean(cfg.priceNow || cfg.whatsappUrl || cfg.buyUrl || !$("payBtn").hidden));
   }
 
   async function refreshAccess() {
     try {
-      const r = await (await fetch("/api/acceso", { cache: "no-store" })).json();
+      const response = await fetch("/api/acceso", { cache: "no-store" });
+      if (!response.ok) return;
+      const r = await response.json();
       const wasLocked = acc.paywall && !acc.unlocked;
       acc = { ...acc, ...r, trialId: r.trialId || acc.trialId };
       updateAccess();
@@ -804,7 +809,21 @@
     $("pwSub").textContent = acc.trialId
       ? "Ya escuchaste tu canción de prueba. Para seguir escuchando todo:"
       : "Para escuchar toda la música:";
-    if (cfg.whatsappUrl) { $("pwHelp").href = cfg.whatsappUrl; $("pwHelp").hidden = false; }
+    $("pwSteps").hidden = !acc.receiptsEnabled;
+    $("pwForm").hidden = !acc.receiptsEnabled;
+    $("pwCode").hidden = !acc.receiptsEnabled;
+    $("pwPurchase").hidden = acc.receiptsEnabled;
+    $("pwUnavailable").hidden = Boolean(cfg.buyUrl || cfg.whatsappUrl);
+    $("pwBuy").hidden = !cfg.buyUrl;
+    if (cfg.buyUrl) {
+      $("pwBuy").href = cfg.buyUrl;
+      $("pwBuy").textContent = cfg.buyText || "Comprar el pack";
+    }
+    if (cfg.whatsappUrl) {
+      $("pwHelp").href = cfg.whatsappUrl;
+      $("pwHelp").textContent = acc.receiptsEnabled ? "¿Problemas? Escríbenos por WhatsApp" : "Comprar por WhatsApp";
+      $("pwHelp").hidden = false;
+    }
     if (acc.estado === "pendiente" && acc.codigo) {
       showResult("wait", pendingText(acc.codigo));
     }
@@ -965,6 +984,7 @@
     }
   });
 
+  updateAccess();
   await refreshAccess();
 
   // ---------- Inicio ----------

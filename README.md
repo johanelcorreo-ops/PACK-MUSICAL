@@ -125,7 +125,7 @@ También funciona en Railway, Fly.io o Google Cloud Run (hay un `Dockerfile` lis
 | `OFFER_ENDS` | (Opcional) Fecha real de fin de la oferta para la cuenta regresiva, ej. `2026-11-30T23:59:00-05:00` |
 | `RECEIPT_MAX_DAYS` | Días de antigüedad aceptados (opcional, por defecto `2`) |
 
-Si faltan `SUPABASE_URL`, `SUPABASE_ANON_KEY` o `MYM_SECRET`, la app funciona como antes, sin bloqueo.
+La primera canción o video sigue siendo gratis aunque falte la configuración de Supabase. En ese caso se muestran los canales de compra configurados en `BUY_URL` o `WHATSAPP_NUMBER`, y la entrega del acceso requiere configurar los comprobantes en Supabase. Para una instancia de demostración sin comprobantes, define `TRIAL_LIMIT_ENABLED=false` si quieres permitir reproducción libre.
 
 ## Videos
 
