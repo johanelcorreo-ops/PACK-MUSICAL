@@ -155,10 +155,14 @@
       <button type="button" class="modal-close" id="pwClose" aria-label="Cerrar">×</button>
       <h2 id="pwTitle">🔒 Desbloquea toda la música</h2>
       <p class="pw-sub" id="pwSub">Ya escuchaste tu canción de prueba. Para seguir escuchando todo:</p>
-      <ol class="pw-steps">
+      <ol class="pw-steps" id="pwSteps">
         <li>Paga <b id="pwPrice">el pack</b><span id="pwInfo"></span></li>
         <li>Sube aquí la captura del comprobante. Se revisa al instante.</li>
       </ol>
+      <div id="pwPurchase" hidden>
+        <p id="pwUnavailable" hidden>La compra no está disponible en este momento.</p>
+        <a class="btn btn-buy" id="pwBuy" href="#" target="_blank" rel="noopener" hidden>Comprar el pack</a>
+      </div>
       <form id="pwForm" novalidate>
         <input id="pwName" placeholder="Tu nombre" autocomplete="name" maxlength="120" />
         <input id="pwPhone" placeholder="Tu WhatsApp" inputmode="tel" autocomplete="tel" maxlength="20" />

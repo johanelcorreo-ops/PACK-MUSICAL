@@ -238,11 +238,12 @@ app.set("trust proxy", 1); // Render pasa la IP real del visitante
 
 // ---------- Comprobantes de pago y acceso ----------
 const pagos = require("./pagos");
-const paywall = Boolean(config.supabaseUrl && config.supabaseKey && config.mymSecret.length >= 24);
-const db = paywall ? pagos.crearDB({ url: config.supabaseUrl, key: config.supabaseKey, secret: config.mymSecret }) : null;
+const receiptsEnabled = Boolean(config.supabaseUrl && config.supabaseKey && config.mymSecret.length >= 24);
+const paywall = receiptsEnabled || process.env.TRIAL_LIMIT_ENABLED !== "false";
+const db = receiptsEnabled ? pagos.crearDB({ url: config.supabaseUrl, key: config.supabaseKey, secret: config.mymSecret }) : null;
 const cookies = pagos.crearCookies(config.mymSecret || tokenSecret);
-if (!paywall) console.log("Comprobantes de pago: desactivado (faltan SUPABASE_URL, SUPABASE_ANON_KEY o MYM_SECRET).");
-if (paywall && !config.priceAmount) console.warn("Ojo: falta PRICE_NOW o PRICE_AMOUNT; no se revisará el valor del comprobante.");
+if (!receiptsEnabled) console.log("Comprobantes de pago: requiere SUPABASE_URL, SUPABASE_ANON_KEY y MYM_SECRET de al menos 24 caracteres.");
+if (receiptsEnabled && !config.priceAmount) console.warn("Ojo: falta PRICE_NOW o PRICE_AMOUNT; no se revisará el valor del comprobante.");
 
 // Estado de cada código de acceso (se consulta a la base de datos cada 2 minutos como máximo).
 const estadoCache = new Map(); // codigo -> { at, estado, motivo }
@@ -264,7 +265,7 @@ async function estadoDeCodigo(codigo) {
 async function acceso(req) {
   const ck = cookies.leer(req);
   if (!paywall) return { ck, unlocked: true };
-  const est = await estadoDeCodigo(ck.c);
+  const est = db ? await estadoDeCodigo(ck.c) : null;
   return { ck, est, unlocked: est ? est.estado === "aprobado" : false };
 }
 
@@ -284,6 +285,7 @@ app.get("/api/acceso", async (req, res) => {
   const a = await acceso(req);
   res.json({
     paywall,
+    receiptsEnabled,
     unlocked: a.unlocked,
     trialId: a.ck.t || null,
     codigo: a.ck.c || null,
@@ -303,7 +305,7 @@ function demasiadosEnvios(ip) {
 }
 
 app.post("/api/comprobante", express.json({ limit: "4mb" }), async (req, res) => {
-  if (!paywall) return res.status(404).json({ error: "Los comprobantes no están activados" });
+  if (!receiptsEnabled) return res.status(404).json({ error: "Los comprobantes no están activados" });
   if (demasiadosEnvios(req.ip)) {
     return res.status(429).json({ error: "Demasiados intentos. Espera un rato o escríbenos por WhatsApp." });
   }
@@ -362,7 +364,7 @@ app.post("/api/comprobante", express.json({ limit: "4mb" }), async (req, res) =>
 
 // Usar un código de acceso en otro celular o computador.
 app.post("/api/codigo", express.json({ limit: "1kb" }), async (req, res) => {
-  if (!paywall) return res.status(404).json({ error: "Los comprobantes no están activados" });
+  if (!receiptsEnabled) return res.status(404).json({ error: "Los comprobantes no están activados" });
   if (demasiadosEnvios("codigo:" + req.ip)) return res.status(429).json({ error: "Demasiados intentos. Espera un rato." });
   const codigo = String(req.body.codigo || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12);
   if (codigo.length < 5) return res.status(400).json({ error: "Escribe el código completo." });
@@ -384,7 +386,7 @@ function esAdmin(req) {
   return crypto.timingSafeEqual(a, b);
 }
 app.use("/api/admin", (req, res, next) => {
-  if (!paywall) return res.status(404).json({ error: "Los comprobantes no están activados" });
+  if (!receiptsEnabled) return res.status(404).json({ error: "Los comprobantes no están activados" });
   if (!config.adminPassword) return res.status(403).json({ error: "Falta configurar ADMIN_PASSWORD en Render." });
   if (demasiadosEnvios("admin:" + req.ip) && !esAdmin(req)) return res.status(429).json({ error: "Demasiados intentos." });
   if (!esAdmin(req)) return res.status(401).json({ error: "Contraseña incorrecta" });
@@ -430,6 +432,7 @@ app.get("/api/config", (_req, res) => {
       ? `https://wa.me/${config.whatsappNumber}?text=${encodeURIComponent(config.whatsappMessage)}`
       : "",
     paywall,
+    receiptsEnabled,
     paymentInfo: config.paymentInfo,
     artistas,
     offerEnds: config.offerEnds && !Number.isNaN(Date.parse(config.offerEnds)) ? new Date(config.offerEnds).toISOString() : "",
@@ -440,7 +443,7 @@ app.get("/api/config", (_req, res) => {
 let compradores = { at: 0, n: 0 };
 app.get("/api/stats", async (_req, res) => {
   const total = (list) => list.reduce((n, s) => n + ((cache.get(s.id) || {}).tracks || []).length, 0);
-  if (paywall && Date.now() - compradores.at > 10 * 60_000) {
+  if (receiptsEnabled && Date.now() - compradores.at > 10 * 60_000) {
     try { compradores = { at: Date.now(), n: Number(await db.contar()) || 0 }; } catch (_) { compradores.at = Date.now(); }
   }
   res.set("Cache-Control", "no-store");
@@ -519,6 +522,7 @@ app.get("/api/videos", async (req, res) => {
 
 // Transmite el audio o video desde Drive soportando Range (necesario para Safari/iOS).
 app.get("/stream/:id", async (req, res) => {
+  res.set("Cache-Control", "private, no-store");
   try {
     let file = byToken.get(req.params.id);
     if (!file) {
@@ -527,7 +531,7 @@ app.get("/stream/:id", async (req, res) => {
     }
     if (!file) return res.status(404).end();
     if (!(await puedeReproducir(req, res, req.params.id))) {
-      return res.status(402).json({ error: "Sube tu comprobante de pago para escuchar todo" });
+      return res.status(402).json({ error: "Necesitas acceso al catálogo completo" });
     }
 
     const headers = {};
@@ -549,7 +553,6 @@ app.get("/stream/:id", async (req, res) => {
     }
     if (!upstream.headers.get("content-type")) res.set("Content-Type", file.mimeType || "audio/mpeg");
     res.set("Content-Disposition", "inline");
-    res.set("Cache-Control", "private, max-age=3600");
 
     const body = Readable.fromWeb(upstream.body);
     req.on("close", () => body.destroy());
