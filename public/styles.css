@@ -375,3 +375,37 @@ body.has-cta .wa-float { display: none; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation: none !important; }
 }
+
+/* ---------- Descargas (canciones, videos y álbumes) ---------- */
+.songs li.has-dl { display: flex; align-items: center; }
+.songs li.has-dl .song-button { flex: 1; min-width: 0; }
+.dl {
+  flex: none; width: 44px; height: 44px; margin-right: 2px;
+  display: grid; place-items: center; border: 0; border-radius: 50%;
+  background: none; color: var(--muted); cursor: pointer; position: relative;
+}
+.dl:hover, .dl:focus-visible { background: #ffffff14; color: #fff; }
+.dl svg, .album-dl svg, #videoDlBtn svg, #dlBtn svg { width: 20px; height: 20px; fill: currentColor; }
+.album-dl {
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+  margin-top: 12px; padding: 12px 14px; border-radius: 12px;
+  border: 1.5px solid #25d36666; background: #25d3661a; color: #8ff0b4;
+  font: inherit; font-weight: 800; font-size: 0.95rem; cursor: pointer;
+}
+.album-dl:hover { background: #25d36629; }
+/* Sin pago: se ven con candado y abren la ventana del comprobante */
+body.dl-locked .dl::after,
+body.dl-locked #dlBtn::after {
+  content: "🔒"; position: absolute; right: 4px; bottom: 4px; font-size: 0.65rem; line-height: 1;
+}
+body.dl-locked .album-dl { border-color: #ffd84d55; background: #ffd84d14; color: #ffe58a; }
+body.dl-locked .album-dl::before { content: "🔒"; }
+body.dl-locked .album-dl svg { display: none; }
+.dl-toast {
+  position: fixed; left: 50%; bottom: calc(var(--player-h) + 24px + env(safe-area-inset-bottom)); z-index: 120;
+  transform: translateX(-50%); max-width: min(92vw, 460px);
+  background: #111a; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border: 1px solid #ffffff2a; color: #fff; padding: 12px 16px; border-radius: 14px;
+  font-weight: 600; font-size: 0.9rem; text-align: center; box-shadow: 0 10px 30px #0008;
+}
+body.no-player .dl-toast { bottom: calc(24px + env(safe-area-inset-bottom)); }

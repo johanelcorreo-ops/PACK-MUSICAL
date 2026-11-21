@@ -208,6 +208,7 @@
     ol.innerHTML = "";
     if (!shown.length) {
       $("listInfo").textContent = isSearch ? "No encontramos esa canción. Prueba con otra palabra." : "Este género no tiene canciones todavía.";
+      updateAlbumButtons();
       return;
     }
     const total = shown.length;
@@ -238,6 +239,7 @@
       button.append(n, name);
       button.addEventListener("click", () => playFrom(shown, i));
       li.appendChild(button);
+      addDownloadButton(li, t);
       ol.appendChild(li);
     });
 
@@ -249,6 +251,7 @@
       more.addEventListener("click", () => { shownLimit += PAGE; renderList(isSearch); });
       ol.appendChild(more);
     }
+    updateAlbumButtons();
   }
 
   function markPlaying() {
@@ -550,6 +553,7 @@
     }
     vi = (i + vQueue.length) % vQueue.length;
     vCurrent = vQueue[vi];
+    updateDownloads();
     $("videoTitle").textContent = vCurrent.name;
     videoWanted = true;
     stopMusic();
@@ -682,7 +686,9 @@
   }
 
   let vFolderSeq = 0;
+  let vFolder = null;
   async function selectVideoFolder(id) {
+    vFolder = id;
     const seq = ++vFolderSeq;
     for (const b of $("videoFolders").children) {
       const selected = b.dataset.id === id;
@@ -725,9 +731,11 @@
       button.append(n, name);
       button.addEventListener("click", () => playVideo(vList, i));
       li.appendChild(button);
+      addDownloadButton(li, t);
       ol.appendChild(li);
     });
     markVideo();
+    updateAlbumButtons();
   }
 
   function markVideo() {
@@ -773,6 +781,7 @@
         updateCta(true, () => window.open(cfg.whatsappUrl, "_blank", "noopener"));
         $("ctaLabel").textContent = "Comprar el pack";
       }
+      updateDownloads();
       return;
     }
     $("ctaLabel").textContent = "Desbloquear el catálogo";
@@ -785,6 +794,7 @@
     else el.textContent = "🎁 Escucha 1 canción gratis";
     $("payBtn").hidden = acc.unlocked || !acc.receiptsEnabled;
     showOffer(Boolean(cfg.priceNow || cfg.whatsappUrl || cfg.buyUrl || !$("payBtn").hidden));
+    updateDownloads();
   }
 
   async function refreshAccess() {
@@ -986,6 +996,80 @@
 
   updateAccess();
   await refreshAccess();
+
+  // ---------- Descargas: solo para quien ya pagó ----------
+  const DL_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3h2v10.2l3.6-3.6 1.4 1.4-6 6-6-6 1.4-1.4 3.6 3.6V3zM5 19h14v2H5z"/></svg>';
+  function downloadsOn() { return Boolean(acc.receiptsEnabled); }
+
+  function addDownloadButton(li, t) {
+    if (!downloadsOn()) return;
+    li.classList.add("has-dl");
+    const dl = document.createElement("button");
+    dl.type = "button";
+    dl.className = "dl";
+    dl.title = "Descargar";
+    dl.setAttribute("aria-label", "Descargar " + t.name);
+    dl.innerHTML = DL_SVG;
+    dl.addEventListener("click", () => descargar("/descargar/" + encodeURIComponent(t.id), `"${t.name}"`));
+    li.appendChild(dl);
+  }
+
+  let toastTimer = 0;
+  function toast(msg) {
+    let el = document.querySelector(".dl-toast");
+    if (!el) {
+      el = document.createElement("div");
+      el.className = "dl-toast";
+      el.setAttribute("role", "status");
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.hidden = true; }, 6000);
+  }
+
+  function descargar(url, etiqueta) {
+    if (!acc.unlocked) { openPaywall(); return; } // sin pago: se ofrece desbloquear
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    toast(`⬇️ Descargando ${etiqueta}. Míralo en la carpeta de Descargas de tu celular o computador.`);
+  }
+
+  function updateAlbumButtons() {
+    const on = downloadsOn();
+    const n = stationTracks.length;
+    const searching = $("search").value.trim() !== "";
+    $("albumBtn").hidden = !on || searching || n === 0;
+    $("albumBtnText").textContent = `Descargar álbum ${stationName(station)} completo (${n.toLocaleString("es-CO")} ${n === 1 ? "canción" : "canciones"})`;
+    $("videoAlbumBtn").hidden = !on || vList.length === 0;
+    $("videoAlbumBtnText").textContent = `Descargar todos los videos (${vList.length})`;
+  }
+
+  function updateDownloads() {
+    const on = downloadsOn();
+    document.body.classList.toggle("dl-locked", on && !acc.unlocked);
+    $("dlBtn").hidden = !on;
+    $("videoDlBtn").hidden = !on || !vCurrent;
+    updateAlbumButtons();
+  }
+
+  $("dlBtn").addEventListener("click", () => {
+    if (current) descargar("/descargar/" + encodeURIComponent(current.id), `"${current.name}"`);
+  });
+  $("videoDlBtn").addEventListener("click", () => {
+    if (vCurrent) descargar("/descargar/" + encodeURIComponent(vCurrent.id), `"${vCurrent.name}"`);
+  });
+  $("albumBtn").addEventListener("click", () =>
+    descargar("/descargar-album/" + encodeURIComponent(station), `el álbum ${stationName(station)} (.zip). Puede tardar según el tamaño`));
+  $("videoAlbumBtn").addEventListener("click", () => {
+    if (vFolder !== null) descargar("/descargar-album/" + encodeURIComponent(vFolder), "los videos (.zip). Puede tardar según el tamaño");
+  });
+  updateDownloads();
 
   // ---------- Inicio ----------
   const hasMusic = (cfg.stations || []).length > 0;

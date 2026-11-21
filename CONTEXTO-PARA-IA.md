@@ -11,6 +11,7 @@ App web (Node.js + Express, sin framework en el frontend) para **vender un pack 
 - La persona escucha **1 canción o video gratis**. Para seguir, sube la **captura del comprobante de pago**
   (Nequi, Bancolombia, Daviplata, Bre-B). La app la lee con OCR y desbloquea si todo cuadra.
 - Tiene un panel de administración en `/admin` para revisar, aprobar o bloquear comprobantes.
+- Quien ya pagó puede **descargar** cada canción/video y **álbumes completos en .zip** (`/descargar/:id`, `/descargar-album/:sourceId`).
 - Página llamativa:
   - portada, músicos ilustrados a los lados, disco girando y cinta de géneros;
   - cifras reales y botón fijo "Desbloquea TODO";
@@ -71,6 +72,7 @@ App web (Node.js + Express, sin framework en el frontend) para **vender un pack 
 | `OFFER_ENDS` | Fecha **real** de fin de oferta para la cuenta regresiva (opcional) |
 | `MIN_BUYERS_TO_SHOW` | Desde cuántos compradores se muestra "N personas ya tienen el pack" (5) |
 | `PREVIEW_SECONDS` | Segundos por canción (`0` = completas, que es lo que se usa) |
+| `DOWNLOAD_ALBUMS_PER_DAY` | Álbumes .zip por código por día (10) |
 | `SHUFFLE`, `CACHE_MINUTES`, `TOKEN_SECRET`, `PORT` | Ajustes técnicos |
 | `DRIVE_API_BASE` | Solo para pruebas: apuntar a un Drive simulado |
 
