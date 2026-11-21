@@ -563,6 +563,115 @@ app.get("/stream/:id", async (req, res) => {
   }
 });
 
+// ---------- Descargas (solo para quien pagó con comprobante aprobado) ----------
+const archiver = require("archiver");
+const albumsPorDia = Number(process.env.DOWNLOAD_ALBUMS_PER_DAY) || 10;
+const descargasAlbum = new Map(); // codigo -> [tiempos]
+
+async function puedeDescargar(req) {
+  if (!receiptsEnabled) return { ok: false, motivo: "Las descargas se activan junto con los comprobantes de pago." };
+  const a = await acceso(req);
+  if (!a.unlocked) return { ok: false, motivo: "Las descargas son para quienes ya compraron el pack." };
+  return { ok: true, codigo: a.ck.c };
+}
+
+// Nombre de archivo seguro para el navegador (con tildes y eñes).
+function adjunto(res, nombre) {
+  const limpio = nombre.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, " ").trim() || "archivo";
+  const ascii = limpio.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7e]/g, "_");
+  res.set("Content-Disposition", `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(limpio)}`);
+}
+
+async function buscarArchivo(id) {
+  let file = byToken.get(id);
+  if (!file) {
+    await Promise.all(allSources.map((st) => getTracks(st).catch(() => [])));
+    file = byToken.get(id);
+  }
+  return file;
+}
+
+app.get("/descargar/:id", async (req, res) => {
+  res.set("Cache-Control", "private, no-store");
+  try {
+    const permiso = await puedeDescargar(req);
+    if (!permiso.ok) return res.status(402).type("text").send(permiso.motivo);
+    const file = await buscarArchivo(req.params.id);
+    if (!file) return res.status(404).type("text").send("Ese archivo ya no está disponible.");
+    const upstream = await driveFetch(`/files/${encodeURIComponent(file.id)}`, { alt: "media", supportsAllDrives: "true" });
+    if (!upstream.ok) {
+      console.error(`Error al descargar ${file.name}: ${upstream.status}`);
+      return res.status(502).type("text").send("No se pudo descargar. Intenta de nuevo.");
+    }
+    res.set("Content-Type", upstream.headers.get("content-type") || file.mimeType || "application/octet-stream");
+    const len = upstream.headers.get("content-length");
+    if (len) res.set("Content-Length", len);
+    adjunto(res, file.name);
+    const body = Readable.fromWeb(upstream.body);
+    req.on("close", () => body.destroy());
+    body.pipe(res);
+  } catch (err) {
+    console.error(err.message);
+    if (!res.headersSent) res.status(502).type("text").send("No se pudo descargar. Intenta de nuevo.");
+  }
+});
+
+// Álbum completo (un género o una categoría de videos) en un .zip que se arma mientras se descarga.
+app.get("/descargar-album/:sourceId", async (req, res) => {
+  res.set("Cache-Control", "private, no-store");
+  const permiso = await puedeDescargar(req);
+  if (!permiso.ok) return res.status(402).type("text").send(permiso.motivo);
+  const source = allSources.find((s) => s.id === req.params.sourceId);
+  if (!source) return res.status(404).type("text").send("Ese álbum no existe.");
+
+  const clave = permiso.codigo || req.ip;
+  const hoy = (descargasAlbum.get(clave) || []).filter((t) => Date.now() - t < 86_400_000);
+  if (hoy.length >= albumsPorDia) {
+    return res.status(429).type("text").send(`Llegaste al máximo de ${albumsPorDia} álbumes por día. Intenta mañana o escríbenos por WhatsApp.`);
+  }
+  hoy.push(Date.now());
+  descargasAlbum.set(clave, hoy);
+
+  let tracks;
+  try { tracks = await getTracks(source); } catch (_) { return res.status(502).type("text").send("No se pudo leer el álbum."); }
+  if (!tracks.length) return res.status(404).type("text").send("Este álbum no tiene archivos.");
+
+  res.set("Content-Type", "application/zip");
+  adjunto(res, `${source.name} - ${config.title}.zip`);
+  const zip = archiver("zip", { store: true }); // mp3/mp4 ya vienen comprimidos: sin recomprimir, más rápido
+  let cancelado = false;
+  req.on("close", () => { if (!res.writableFinished) { cancelado = true; zip.abort(); } });
+  zip.on("warning", (e) => console.warn("zip:", e.message));
+  zip.on("error", (e) => { console.error("zip:", e.message); res.destroy(e); });
+  zip.pipe(res);
+
+  const usados = new Set();
+  for (const t of tracks) {
+    if (cancelado) break;
+    const file = byToken.get(t.id);
+    if (!file) continue;
+    // Nombres repetidos (de distintas subcarpetas) no se pisan dentro del zip.
+    let nombre = file.name.replace(/[\\/:*?"<>|]+/g, " ").trim();
+    for (let n = 2; usados.has(nombre.toLowerCase()); n++) nombre = file.name.replace(/(\.[^.]+)?$/, ` (${n})$1`);
+    usados.add(nombre.toLowerCase());
+    try {
+      const up = await driveFetch(`/files/${encodeURIComponent(file.id)}`, { alt: "media", supportsAllDrives: "true" });
+      if (!up.ok) { console.error(`Álbum: no se pudo bajar ${file.name} (${up.status})`); continue; }
+      await new Promise((ok, fail) => {
+        const onEntry = () => { zip.off("error", onError); ok(); };
+        const onError = (e) => { zip.off("entry", onEntry); fail(e); };
+        zip.once("entry", onEntry);
+        zip.once("error", onError);
+        zip.append(Readable.fromWeb(up.body), { name: nombre });
+      });
+    } catch (err) {
+      if (cancelado) break;
+      console.error(`Álbum: error con ${file.name}:`, err.message);
+    }
+  }
+  if (!cancelado) zip.finalize();
+});
+
 // Página principal: Facebook y WhatsApp necesitan la dirección completa de la imagen de vista previa.
 const fs = require("fs");
 const indexHtml = fs.readFileSync(path.join(__dirname, "public", "index.html"), "utf8");

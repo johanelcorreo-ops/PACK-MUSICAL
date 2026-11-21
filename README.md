@@ -92,6 +92,17 @@ También funciona en Railway, Fly.io o Google Cloud Run (hay un `Dockerfile` lis
 - **Botón fijo "Desbloquea TODO por $…"** abajo, mientras la persona no ha pagado.
 - **Cuenta regresiva** solo si pones en `OFFER_ENDS` la fecha **real** en que termina la oferta, ej. `2026-11-30T23:59:00-05:00`.
 
+## Descargas
+
+Quien ya pagó (comprobante **aprobado**) puede descargar:
+
+- **Cada canción o video**: botón ⬇ al lado de cada uno y en el reproductor de abajo.
+- **El álbum completo** de un género (o todos los videos de una categoría) en un archivo **.zip** que se arma mientras se descarga.
+
+Quien no ha pagado ve los botones con 🔒 y, al tocarlos, se abre la ventana para subir el comprobante.
+Si los comprobantes no están activados, no aparecen botones de descarga.
+`DOWNLOAD_ALBUMS_PER_DAY` limita cuántos álbumes .zip puede bajar cada código por día (10 por defecto), para no gastar de más la transferencia de Render.
+
 ## Comprobantes de pago
 
 **Cómo funciona para el cliente:** escucha 1 canción (o video) gratis → al intentar otra le sale "Desbloquea toda la música" con los datos para pagar → sube la captura del comprobante → si todo cuadra se desbloquea al instante y recibe un **código de acceso** para entrar desde otro celular.
@@ -123,6 +134,7 @@ También funciona en Railway, Fly.io o Google Cloud Run (hay un `Dockerfile` lis
 | `PAYMENT_ACCOUNTS` | Tu número/cuenta a donde pagan, ej. `3016797379` (varias separadas por coma) |
 | `PAYMENT_INFO` | Texto con los datos de pago que ve el cliente, ej. `Nequi, Daviplata o llave Bre-B 301 679 7379` |
 | `OFFER_ENDS` | (Opcional) Fecha real de fin de la oferta para la cuenta regresiva, ej. `2026-11-30T23:59:00-05:00` |
+| `DOWNLOAD_ALBUMS_PER_DAY` | Álbumes .zip por código de acceso por día (opcional, por defecto `10`) |
 | `RECEIPT_MAX_DAYS` | Días de antigüedad aceptados (opcional, por defecto `2`) |
 
 La primera canción o video sigue siendo gratis aunque falte la configuración de Supabase. En ese caso se muestran los canales de compra configurados en `BUY_URL` o `WHATSAPP_NUMBER`, y la entrega del acceso requiere configurar los comprobantes en Supabase. Para una instancia de demostración sin comprobantes, define `TRIAL_LIMIT_ENABLED=false` si quieres permitir reproducción libre.

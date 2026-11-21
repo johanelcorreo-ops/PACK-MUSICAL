@@ -10,6 +10,7 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@tesseract.js-data/spa": "^1.0.0",
+    "archiver": "^7.0.1",
     "express": "^4.22.3",
     "google-auth-library": "^11.3.4",
     "tesseract.js": "^5.1.1"
