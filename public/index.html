@@ -34,6 +34,7 @@
           </button>
           <button class="btn btn-buy" type="button" id="heroBuy" hidden>Comprar acceso</button>
         </div>
+        <p class="purchase-note" id="purchaseNote" hidden>Escucha una canción gratis antes de decidir. Si compras el acceso, sube tu comprobante aquí. Cuando se apruebe, podrás escuchar el catálogo completo y guardar tu código para entrar desde otro equipo.</p>
         <section class="usb-offer" id="usbOffer" aria-labelledby="usbTitle" hidden>
           <h2 id="usbTitle">Descargar música para USB</h2>
           <p>Con el acceso completo puedes guardar canciones o álbumes. Si descargas un ZIP, descomprímelo y copia la música a tu memoria USB.</p>
@@ -109,6 +110,10 @@
           <button type="button" class="btn btn-pay" id="payBtn" hidden>Subir comprobante</button>
         </section>
 
+        <section class="card reviews" id="reviews" hidden aria-labelledby="reviewsTitle">
+          <h2 id="reviewsTitle">Lo que cuentan nuestros compradores</h2>
+          <div id="reviewList"></div>
+        </section>
         <!-- Qué incluye -->
         <section class="card" id="featuresCard" hidden>
           <h2>¿Qué incluye?</h2>

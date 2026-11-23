@@ -62,6 +62,17 @@
   }
   showOffer(Boolean(cfg.priceNow || cfg.whatsappUrl || cfg.buyUrl));
 
+  for (const review of cfg.testimonios || []) {
+    const figure = document.createElement("figure");
+    const quote = document.createElement("blockquote");
+    quote.textContent = review.texto;
+    const author = document.createElement("figcaption");
+    author.textContent = review.nombre;
+    figure.append(quote, author);
+    $("reviewList").appendChild(figure);
+  }
+  $("reviews").hidden = !$("reviewList").childElementCount;
+
   if (cfg.features && cfg.features.length) {
     for (const f of cfg.features) {
       const li = document.createElement("li");
@@ -782,6 +793,7 @@
   }
 
   function updateAccess() {
+    $("purchaseNote").hidden = !acc.receiptsEnabled || acc.unlocked;
     $("heroBuy").hidden = acc.paywall ? acc.unlocked : !cfg.buyUrl;
     $("heroBuy").textContent = cfg.priceNow ? "Comprar acceso · " + cfg.priceNow : "Comprar acceso";
     const el = $("access");
