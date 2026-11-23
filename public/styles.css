@@ -415,3 +415,8 @@ body.no-player .dl-toast { bottom: calc(24px + env(safe-area-inset-bottom)); }
 .reviews figure + figure { border-top: 1px solid var(--line); }
 .reviews blockquote { margin: 0 0 6px; line-height: 1.5; }
 .reviews figcaption { font-weight: 700; color: var(--accent); }
+
+@media (max-width: 540px) {
+  .site-nav { flex-wrap: wrap; padding-block: 10px; }
+  .site-nav > div { flex-wrap: wrap; }
+}

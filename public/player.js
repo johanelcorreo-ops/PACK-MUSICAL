@@ -72,7 +72,6 @@
     $("reviewList").appendChild(figure);
   }
   const hasReviews = $("reviewList").childElementCount > 0;
-  $("reviews").hidden = !hasReviews;
   $("usageExamples").hidden = hasReviews;
 
   if (cfg.features && cfg.features.length) {

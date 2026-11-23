@@ -21,7 +21,7 @@
   <main class="app" id="inicio">
     <nav class="site-nav" aria-label="Navegación principal">
       <a class="brand" href="#inicio"><img src="/portada.jpg" alt="" width="36" height="36" />MÚSICA Y MÁS</a>
-      <div><a href="#catalogo">Catálogo</a><a id="offerLink" href="#offer" hidden>Acceso completo</a></div>
+      <div><a href="#catalogo">Catálogo</a><a href="#reviews">Testimonios</a><a id="offerLink" href="#offer" hidden>Acceso completo</a></div>
     </nav>
     <header class="hero">
       <div class="hero-content">
@@ -47,17 +47,16 @@
       </div>
     </header>
 
-    <section class="card" id="usageExamples" aria-labelledby="examplesTitle">
-      <h2 id="examplesTitle">Así puedes usar MÚSICA Y MÁS</h2>
-      <p>Ejemplos ilustrativos</p>
-      <ul class="features">
-        <li>Para una reunión, busca una canción por su nombre y ponla a sonar desde tu celular.</li>
-        <li>Para el carro, descarga un álbum con tu acceso completo, descomprime el ZIP y copia la música a tu memoria USB.</li>
-        <li>Antes de comprar, elige una canción del catálogo y escucha tu primera pista gratis.</li>
-      </ul>
-    </section>
-    <section class="card reviews" id="reviews" hidden aria-labelledby="reviewsTitle">
-      <h2 id="reviewsTitle">Lo que cuentan nuestros compradores</h2>
+    <section class="card reviews" id="reviews" aria-labelledby="reviewsTitle">
+      <h2 id="reviewsTitle">Testimonios</h2>
+      <div id="usageExamples">
+        <p><strong>Ejemplos ilustrativos.</strong> Aquí aparecerán las opiniones de compradores cuando se publiquen.</p>
+        <ul class="features">
+          <li>Para una reunión, busca una canción por su nombre y ponla a sonar desde tu celular.</li>
+          <li>Para el carro, descarga un álbum con tu acceso completo, descomprime el ZIP y copia la música a tu memoria USB.</li>
+          <li>Antes de comprar, elige una canción del catálogo y escucha tu primera pista gratis.</li>
+        </ul>
+      </div>
       <div id="reviewList"></div>
     </section>
 
