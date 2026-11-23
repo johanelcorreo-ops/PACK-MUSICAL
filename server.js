@@ -5,6 +5,9 @@ const path = require("path");
 const crypto = require("crypto");
 const { Readable } = require("stream");
 
+const pixelProduccion = process.env.RENDER_EXTERNAL_HOSTNAME === "pack-musical-player.onrender.com" ? "1353260216811765" : "";
+const pixelId = process.env.META_PIXEL_ID ?? pixelProduccion;
+
 const config = {
   port: Number(process.env.PORT) || 3000,
   folderId: process.env.GDRIVE_FOLDER_ID || "",
@@ -18,7 +21,7 @@ const config = {
   shuffle: (process.env.SHUFFLE || "true") !== "false",
   title: process.env.SITE_TITLE || "MÚSICA Y MÁS",
   subtitle: process.env.SITE_SUBTITLE || "Escucha, busca y disfruta toda la música",
-  metaPixelId: /^\d+$/.test(process.env.META_PIXEL_ID || "") ? process.env.META_PIXEL_ID : "",
+  metaPixelId: /^\d+$/.test(pixelId) ? pixelId : "",
   buyUrl: process.env.BUY_URL || "",
   buyText: process.env.BUY_TEXT || "Comprar el pack",
   // Información del pack (los puntos se separan con "|")
