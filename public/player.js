@@ -71,7 +71,9 @@
     figure.append(quote, author);
     $("reviewList").appendChild(figure);
   }
-  $("reviews").hidden = !$("reviewList").childElementCount;
+  const hasReviews = $("reviewList").childElementCount > 0;
+  $("reviews").hidden = !hasReviews;
+  $("usageExamples").hidden = hasReviews;
 
   if (cfg.features && cfg.features.length) {
     for (const f of cfg.features) {

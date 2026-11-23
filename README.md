@@ -185,4 +185,4 @@ Comprueba el recorrido en Administrador de eventos → Probar eventos antes de a
 
 ### Opiniones de compradores
 
-En Render puedes configurar `TESTIMONIOS_JSON` como una lista JSON de hasta seis opiniones. Cada entrada lleva `nombre` (el nombre público elegido por el comprador) y `texto` (sus palabras). Publica únicamente opiniones reales con autorización. Omite teléfonos, códigos de acceso y datos de pago. Una lista vacía oculta la sección.
+En Render puedes configurar `TESTIMONIOS_JSON` como una lista JSON de hasta seis opiniones. Cada entrada lleva `nombre` (el nombre público elegido por el comprador) y `texto` (sus palabras). Publica únicamente opiniones reales con autorización. Omite teléfonos, códigos de acceso y datos de pago. Si la lista está vacía, debajo de la portada aparecen ejemplos ilustrativos de uso. Al configurar opiniones reales, estas sustituyen a los ejemplos.
