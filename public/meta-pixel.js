@@ -40,9 +40,20 @@ function iniciarPixelMeta(id) {
 
   function aprobada(compra) {
     if (!activo || !compra || compra.id !== pendiente || !(compra.value > 0)) return;
-    window.fbq("trackSingle", id, "Purchase", { value: compra.value, currency: "COP" }, { eventID: compra.id });
-    pendiente = null;
-    try { localStorage.removeItem(pendingKey); } catch (_) {}
+    const sentKey = pendingKey + "-enviada-" + compra.id;
+    function enviarUnaVez() {
+      if (pendiente !== compra.id) return;
+      pendiente = null;
+      try {
+        if (localStorage.getItem(sentKey)) return;
+        localStorage.setItem(sentKey, "1");
+        if (localStorage.getItem(pendingKey) === compra.id) localStorage.removeItem(pendingKey);
+      } catch (_) {}
+      window.fbq("trackSingle", id, "Purchase", { value: compra.value, currency: "COP" }, { eventID: compra.id });
+    }
+    // Dos pestañas pueden detectar la misma aprobación en el mismo instante.
+    if (navigator.locks) navigator.locks.request(sentKey, enviarUnaVez).catch(enviarUnaVez);
+    else enviarUnaVez();
   }
 
   return { evento, recibida, aprobada };
