@@ -143,11 +143,22 @@ h2 { margin: 0 0 14px; font-size: 1.15rem; font-weight: 800; }
 .stations button.on { border-color: var(--accent); background: #bda4ff20; }
 .playlist-cover {
   display: block; width: 100%; aspect-ratio: 1; max-height: 155px; border-radius: 8px;
-  background: #30243f url("/playlist-covers.webp") 0 0 / 200% 200%;
+  background: #30243f url("/portadas-generos.webp") 0 0 / 400% 400%;
 }
-.stations button:nth-child(4n + 2) .playlist-cover { background-position: 100% 0; }
-.stations button:nth-child(4n + 3) .playlist-cover { background-position: 0 100%; }
-.stations button:nth-child(4n + 4) .playlist-cover { background-position: 100% 100%; }
+.letter-cover {
+  display: grid; place-items: center; color: white; font-size: 2rem;
+  background: linear-gradient(135deg, hsl(var(--cover-hue) 58% 36%), #21172b);
+}
+.usb-offer {
+  max-width: 540px; margin: 14px 0; padding: 12px 16px;
+  background: #17101deb; border-left: 3px solid var(--gold); border-radius: 8px;
+}
+.usb-offer h2 { margin: 0; font-size: 1.15rem; }
+.usb-offer p { margin: 6px 0 10px; line-height: 1.4; }
+.usb-offer button {
+  border: 0; border-radius: 8px; padding: 10px 14px; min-height: 44px;
+  background: var(--gold); color: #241828; font: inherit; font-weight: 700; cursor: pointer;
+}
 
 .search {
   display: flex; align-items: center; gap: 10px;

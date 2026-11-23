@@ -145,20 +145,43 @@
   loadStats();
 
   // ---------- Géneros ----------
+  // En el mismo orden que las fotos de portadas-generos.webp (cuatro por fila).
+  const genrePatterns = [
+    /vallenat|valleto/, /salsa/, /merengue/, /cumbia/,
+    /bachata/, /reg[gu]+[ea]ton|reggaeton|urbano|dembow|hip hop|trap/, /reggae/, /champeta/,
+    /rock|metal/, /balada|romantic|bolero/, /ranchera|mariachi|nortena/, /popular|despecho|carrilera/,
+    /navid|diciembr|decembr|villancico|parrand/, /electroni|techno|house|trance/, /disco|old school/, /tropical|carib/,
+  ];
+
+  function collectionButton(name) {
+    const button = document.createElement("button");
+    button.type = "button";
+    const cover = document.createElement("span");
+    cover.className = "playlist-cover";
+    cover.setAttribute("aria-hidden", "true");
+    const key = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const index = genrePatterns.findIndex(pattern => pattern.test(key));
+    if (index >= 0) {
+      cover.style.backgroundPosition = `${(index % 4) * 100 / 3}% ${Math.floor(index / 4) * 100 / 3}%`;
+    } else {
+      const hue = Array.from(key).reduce((value, char) => (value * 31 + char.codePointAt(0)) % 360, 0);
+      cover.classList.add("letter-cover");
+      cover.style.setProperty("--cover-hue", hue);
+      cover.textContent = name.trim().split(/\s+/).slice(0, 2).map(word => word[0]).join("").toUpperCase();
+    }
+    const label = document.createElement("span");
+    label.textContent = name;
+    button.append(cover, label);
+    return button;
+  }
+
   function renderStations() {
     const list = cfg.stations || [];
     if (!list.length) return;
     const nav = $("stations");
     nav.innerHTML = "";
     for (const st of list) {
-      const b = document.createElement("button");
-      b.type = "button";
-      const cover = document.createElement("span");
-      cover.className = "playlist-cover";
-      cover.setAttribute("aria-hidden", "true");
-      const label = document.createElement("span");
-      label.textContent = st.name;
-      b.append(cover, label);
+      const b = collectionButton(st.name);
       b.dataset.id = st.id;
       b.classList.toggle("on", st.id === station);
       b.setAttribute("aria-pressed", String(st.id === station));
@@ -669,14 +692,7 @@
     const nav = $("videoFolders");
     nav.innerHTML = "";
     for (const f of list) {
-      const b = document.createElement("button");
-      b.type = "button";
-      const cover = document.createElement("span");
-      cover.className = "playlist-cover";
-      cover.setAttribute("aria-hidden", "true");
-      const label = document.createElement("span");
-      label.textContent = f.name;
-      b.append(cover, label);
+      const b = collectionButton(f.name);
       b.dataset.id = f.id;
       b.addEventListener("click", () => selectVideoFolder(f.id));
       nav.appendChild(b);
@@ -1052,12 +1068,21 @@
 
   function updateDownloads() {
     const on = downloadsOn();
+    $("usbOffer").hidden = !on || !cfg.stations?.length;
+    $("usbAction").textContent = acc.unlocked ? "Elegir música para descargar" : "Desbloquear descargas";
     document.body.classList.toggle("dl-locked", on && !acc.unlocked);
     $("dlBtn").hidden = !on;
     $("videoDlBtn").hidden = !on || !vCurrent;
     updateAlbumButtons();
   }
 
+  $("usbAction").addEventListener("click", () => {
+    if (!acc.unlocked) return openPaywall();
+    showTab("music");
+    const target = $("stations").querySelector("button.on") || $("search");
+    target.focus({ preventScroll: true });
+    $("musicCard").scrollIntoView({ block: "start" });
+  });
   $("dlBtn").addEventListener("click", () => {
     if (current) descargar("/descargar/" + encodeURIComponent(current.id), `"${current.name}"`);
   });
