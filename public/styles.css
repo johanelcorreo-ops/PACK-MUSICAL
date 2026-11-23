@@ -432,8 +432,7 @@ body.no-player .dl-toast { bottom: calc(24px + env(safe-area-inset-bottom)); }
   border-radius: 4px 16px 16px 16px;
 }
 .reviews figure + figure { border-top: 0; }
-.reviews figure::before {
-  content: "♪";
+.review-avatar {
   position: absolute;
   left: -42px;
   top: 0;
@@ -442,11 +441,14 @@ body.no-player .dl-toast { bottom: calc(24px + env(safe-area-inset-bottom)); }
   display: grid;
   place-items: center;
   border-radius: 50%;
+  overflow: hidden;
   background: #5b3975;
   color: white;
   font-size: 18px;
 }
-.reviews figure:nth-of-type(3n + 2)::before { background: #28635b; }
-.reviews figure:nth-of-type(3n)::before { background: #754623; }
+.reviews figure:nth-of-type(3n + 2) .review-avatar { background: #28635b; }
+.reviews figure:nth-of-type(3n) .review-avatar { background: #754623; }
 .reviews figcaption { grid-row: 1; font-size: .92rem; }
 .reviews blockquote { margin: 0; }
+
+.review-avatar img { width: 100%; height: 100%; object-fit: cover; }

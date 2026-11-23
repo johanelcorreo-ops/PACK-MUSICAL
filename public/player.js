@@ -68,11 +68,22 @@
     quote.textContent = review.texto;
     const author = document.createElement("figcaption");
     author.textContent = review.nombre;
-    figure.append(quote, author);
+    const avatar = document.createElement("span");
+    avatar.className = "review-avatar";
+    avatar.setAttribute("aria-hidden", "true");
+    const initials = review.nombre.split(/\s+/).slice(0, 2).map(word => word[0]).join("").toUpperCase();
+    avatar.textContent = initials;
+    if (review.foto) {
+      const photo = document.createElement("img");
+      photo.alt = "";
+      photo.addEventListener("error", () => { avatar.textContent = initials; }, { once: true });
+      photo.src = review.foto;
+      avatar.replaceChildren(photo);
+    }
+    author.prepend(avatar);
+    figure.append(author, quote);
     $("reviewList").appendChild(figure);
   }
-  const hasReviews = $("reviewList").childElementCount > 0;
-  $("usageExamples").hidden = hasReviews;
 
   if (cfg.features && cfg.features.length) {
     for (const f of cfg.features) {

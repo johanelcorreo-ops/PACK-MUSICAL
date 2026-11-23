@@ -12,7 +12,8 @@ function leerTestimonios(valor) {
     if (!Array.isArray(entradas)) throw new Error();
     return entradas.filter(t => typeof t?.nombre === "string" && t.nombre.trim() &&
       typeof t.texto === "string" && t.texto.trim()).slice(0, 6)
-      .map(t => ({ nombre: t.nombre.trim(), texto: t.texto.trim() }));
+      .map(t => ({ nombre: t.nombre.trim(), texto: t.texto.trim(),
+        foto: typeof t.foto === "string" && /^\/testimonios\/[\w-]+\.(?:webp|jpe?g|png)$/i.test(t.foto) ? t.foto : null }));
   } catch {
     console.warn("Revisa el formato JSON de TESTIMONIOS_JSON.");
     return [];
