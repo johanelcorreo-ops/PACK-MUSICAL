@@ -216,20 +216,6 @@ h2 { margin: 0 0 14px; font-size: 1.15rem; font-weight: 800; }
 .audio-only svg { width: 20px; height: 20px; fill: currentColor; }
 .audio-only.on { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; }
 
-/* ---------- WhatsApp flotante ---------- */
-.wa-float {
-  position: fixed; right: 16px;
-  bottom: calc(var(--player-h) + 16px + env(safe-area-inset-bottom));
-  width: 56px; height: 56px; border-radius: 50%;
-  background: var(--wa); color: #fff;
-  display: grid; place-items: center;
-  box-shadow: 0 8px 24px #0008;
-  z-index: 20;
-}
-.wa-float { transition: transform 0.2s, opacity 0.2s; }
-.wa-float.away { transform: scale(0.5); opacity: 0; pointer-events: none; }
-.wa-float svg { width: 30px; height: 30px; fill: currentColor; }
-body.no-player .wa-float { bottom: calc(16px + env(safe-area-inset-bottom)); }
 body.no-player { padding-bottom: 32px; }
 
 /* ---------- Reproductor ---------- */
@@ -356,7 +342,7 @@ body.no-player .cta-bar { bottom: env(safe-area-inset-bottom); }
 }
 body.has-cta { padding-bottom: calc(var(--player-h) + 96px + env(safe-area-inset-bottom)); }
 body.has-cta.no-player { padding-bottom: 96px; }
-body.has-cta .wa-float { display: none; }
+
 
 
 
@@ -420,3 +406,6 @@ body.dl-locked .album-dl svg { display: none; }
   font-weight: 600; font-size: 0.9rem; text-align: center; box-shadow: 0 10px 30px #0008;
 }
 body.no-player .dl-toast { bottom: calc(24px + env(safe-area-inset-bottom)); }
+
+.hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+.hero-actions button { margin: 0; min-height: 44px; cursor: pointer; }

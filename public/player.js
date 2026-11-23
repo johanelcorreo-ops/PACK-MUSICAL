@@ -26,6 +26,7 @@
   try {
     cfg = await (await fetch("/api/config")).json();
   } catch (_) {}
+  const pixel = iniciarPixelMeta(cfg.metaPixelId);
   shuffle = cfg.shuffle !== false;
   $("shuffleBtn").classList.toggle("on", shuffle);
 
@@ -48,19 +49,12 @@
   if (cfg.whatsappUrl) {
     $("waBtn").href = cfg.whatsappUrl;
     $("waBtn").hidden = false;
-    $("waFloat").href = cfg.whatsappUrl;
-    $("waFloat").hidden = false;
-    // El botón flotante se esconde mientras el botón grande de WhatsApp está en pantalla.
-    if ("IntersectionObserver" in window) {
-      new IntersectionObserver(([e]) => {
-        $("waFloat").classList.toggle("away", e.isIntersecting);
-      }).observe($("waBtn"));
-    }
   }
   if (cfg.buyUrl) {
     $("buyBtn").href = cfg.buyUrl;
     $("buyBtn").textContent = cfg.buyText || "Comprar el pack";
-    $("buyBtn").hidden = false;
+    $("buyBtn").hidden = Boolean(cfg.receiptsEnabled);
+    $("buyBtn").addEventListener("click", () => pixel.evento("InitiateCheckout"));
   }
   function showOffer(show) {
     $("offer").hidden = !show;
@@ -788,15 +782,14 @@
   }
 
   function updateAccess() {
+    $("heroBuy").hidden = acc.paywall ? acc.unlocked : !cfg.buyUrl;
+    $("heroBuy").textContent = cfg.priceNow ? "Comprar acceso · " + cfg.priceNow : "Comprar acceso";
     const el = $("access");
     if (!acc.paywall) {
       el.hidden = true;
       $("payBtn").hidden = true;
-      // Sin comprobantes activados: el botón fijo lleva a WhatsApp (si hay número y precio).
-      if (cfg.whatsappUrl && cfg.priceNow) {
-        updateCta(true, () => window.open(cfg.whatsappUrl, "_blank", "noopener"));
-        $("ctaLabel").textContent = "Comprar el pack";
-      }
+      updateCta(Boolean(cfg.buyUrl), () => $("buyBtn").click());
+      $("ctaLabel").textContent = "Comprar acceso";
       updateDownloads();
       return;
     }
@@ -818,6 +811,7 @@
       const response = await fetch("/api/acceso", { cache: "no-store" });
       if (!response.ok) return;
       const r = await response.json();
+      if (r.estado === "aprobado" && r.unlocked) pixel.aprobada(r.compra);
       const wasLocked = acc.paywall && !acc.unlocked;
       acc = { ...acc, ...r, trialId: r.trialId || acc.trialId };
       updateAccess();
@@ -847,13 +841,14 @@
     }
     if (cfg.whatsappUrl) {
       $("pwHelp").href = cfg.whatsappUrl;
-      $("pwHelp").textContent = acc.receiptsEnabled ? "¿Problemas? Escríbenos por WhatsApp" : "Comprar por WhatsApp";
+      $("pwHelp").textContent = "Ayuda por WhatsApp";
       $("pwHelp").hidden = false;
     }
     if (acc.estado === "pendiente" && acc.codigo) {
       showResult("wait", pendingText(acc.codigo));
     }
     if ($("paywall").hidden) {
+      if (acc.estado !== "pendiente") pixel.evento("InitiateCheckout");
       paywallTrigger = document.activeElement;
       $("paywall").hidden = false;
       $("pwClose").focus();
@@ -870,6 +865,10 @@
   $("pwClose").addEventListener("click", closePaywall);
   $("paywall").addEventListener("click", (e) => { if (e.target === $("paywall")) closePaywall(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("paywall").hidden) closePaywall(); });
+  $("heroBuy").addEventListener("click", () => {
+    if (acc.paywall) openPaywall();
+    else $("buyBtn").click();
+  });
   $("payBtn").addEventListener("click", openPaywall);
   $("access").addEventListener("click", () => { if (!acc.unlocked) openPaywall(); });
 
@@ -947,7 +946,9 @@
       });
       const r = await res.json();
       if (!res.ok) throw new Error(r.error || "Error");
+      if (r.estado === "aprobado" || r.estado === "pendiente") pixel.recibida(r.compra);
       if (r.estado === "aprobado") {
+        pixel.aprobada(r.compra);
         acc.unlocked = true;
         acc.codigo = r.codigo;
         acc.estado = "aprobado";
