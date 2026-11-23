@@ -85,6 +85,8 @@
     $("reviewList").appendChild(figure);
   }
 
+  $("sampleReviews").hidden = $("reviewList").childElementCount > 0;
+
   if (cfg.features && cfg.features.length) {
     for (const f of cfg.features) {
       const li = document.createElement("li");
