@@ -415,3 +415,8 @@ body.no-player .dl-toast { bottom: calc(24px + env(safe-area-inset-bottom)); }
   .site-nav { flex-wrap: wrap; padding-block: 10px; }
   .site-nav > div { flex-wrap: wrap; }
 }
+
+.trial-offer { width: min(440px, calc(100% - 32px)); margin: auto; color: #fff; }
+.trial-offer::backdrop { background: #05030ccc; }
+.trial-offer .btn { margin-top: 14px; }
+.trial-offer p { margin: 12px 0 0; color: var(--muted); line-height: 1.5; }

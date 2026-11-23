@@ -435,7 +435,28 @@
   });
   audio.addEventListener("pause", updatePlayState);
   audio.addEventListener("playing", () => { errorsInARow = 0; });
-  audio.addEventListener("ended", next);
+  function isFreeTrial() {
+    return acc.paywall && !acc.unlocked;
+  }
+
+  audio.addEventListener("ended", () => {
+    if (!isFreeTrial()) return next();
+    if (!$("paywall").hidden || !current) return;
+    if (acc.estado === "pendiente") return openPaywall();
+    const price = String(cfg.priceNow || "").trim();
+    $("trialBuy").textContent = price
+      ? "Desbloquear por " + price + (/COP/i.test(price) ? "" : " COP")
+      : "Desbloquear el catálogo";
+    $("trialBenefits").textContent = acc.receiptsEnabled
+      ? "Incluye reproducción con la pantalla bloqueada y descarga para USB."
+      : "Incluye reproducción con la pantalla bloqueada.";
+    $("trialOffer").showModal();
+  });
+  $("trialClose").addEventListener("click", () => $("trialOffer").close());
+  $("trialBuy").addEventListener("click", () => {
+    $("trialOffer").close();
+    openPaywall();
+  });
   audio.addEventListener("error", () => {
     if (!current) return;
     if (acc.paywall && !acc.unlocked) { openPaywall(); return; } // el servidor pidió comprobante
@@ -451,17 +472,17 @@
   // Barra de progreso (se puede adelantar) + límite de muestra opcional
   let seeking = false;
   audio.addEventListener("timeupdate", () => {
-    const limit = cfg.previewSeconds > 0 ? Math.min(cfg.previewSeconds, audio.duration || Infinity) : audio.duration;
+    const limit = !isFreeTrial() && cfg.previewSeconds > 0 ? Math.min(cfg.previewSeconds, audio.duration || Infinity) : audio.duration;
     if (!seeking && limit && isFinite(limit)) {
       $("seek").value = Math.round((audio.currentTime / limit) * 1000);
       $("tCur").textContent = fmt(audio.currentTime);
       $("tDur").textContent = fmt(limit);
     }
-    if (cfg.previewSeconds > 0 && audio.currentTime >= cfg.previewSeconds) next();
+    if (!isFreeTrial() && cfg.previewSeconds > 0 && audio.currentTime >= cfg.previewSeconds) next();
   });
   $("seek").addEventListener("input", () => { seeking = true; });
   $("seek").addEventListener("change", () => {
-    const limit = cfg.previewSeconds > 0 ? Math.min(cfg.previewSeconds, audio.duration || Infinity) : audio.duration;
+    const limit = !isFreeTrial() && cfg.previewSeconds > 0 ? Math.min(cfg.previewSeconds, audio.duration || Infinity) : audio.duration;
     if (limit && isFinite(limit)) audio.currentTime = ($("seek").value / 1000) * limit;
     seeking = false;
   });
@@ -782,6 +803,7 @@
   }
 
   function updateAccess() {
+    if (!isFreeTrial() && $("trialOffer").open) $("trialOffer").close();
     $("purchaseNote").hidden = !acc.receiptsEnabled || acc.unlocked;
     $("heroBuy").hidden = acc.paywall ? acc.unlocked : !cfg.buyUrl;
     $("heroBuy").textContent = cfg.priceNow ? "Comprar acceso · " + cfg.priceNow : "Comprar acceso";
