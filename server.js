@@ -5,23 +5,7 @@ const path = require("path");
 const crypto = require("crypto");
 const { Readable } = require("stream");
 
-function leerTestimonios(valor) {
-  if (!valor) return [];
-  try {
-    const entradas = JSON.parse(valor);
-    if (!Array.isArray(entradas)) throw new Error();
-    return entradas.filter(t => typeof t?.nombre === "string" && t.nombre.trim() &&
-      typeof t.texto === "string" && t.texto.trim()).slice(0, 6)
-      .map(t => ({ nombre: t.nombre.trim(), texto: t.texto.trim(),
-        foto: typeof t.foto === "string" && /^\/testimonios\/[\w-]+\.(?:webp|jpe?g|png)$/i.test(t.foto) ? t.foto : null }));
-  } catch {
-    console.warn("Revisa el formato JSON de TESTIMONIOS_JSON.");
-    return [];
-  }
-}
-
 const config = {
-  testimonios: leerTestimonios(process.env.TESTIMONIOS_JSON),
   port: Number(process.env.PORT) || 3000,
   folderId: process.env.GDRIVE_FOLDER_ID || "",
   // Varias carpetas = varias "estaciones": "Vallenato=<enlace o ID>; Reggae=<enlace o ID>"
@@ -442,7 +426,6 @@ app.get("/admin", (_req, res) => res.sendFile(path.join(__dirname, "public", "ad
 app.get("/api/config", (_req, res) => {
   res.json({
     title: config.title,
-    testimonios: config.testimonios,
     subtitle: config.subtitle,
     metaPixelId: config.metaPixelId,
     buyUrl: config.buyUrl,
