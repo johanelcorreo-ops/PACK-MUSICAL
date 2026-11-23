@@ -159,6 +159,13 @@
     <button type="button" class="cta-btn" id="ctaBtn"><span id="ctaLabel">Desbloquear el catálogo</span> <b id="ctaPrice"></b></button>
   </div>
 
+  <dialog class="modal-box trial-offer" id="trialOffer" aria-labelledby="trialTitle" aria-describedby="trialBenefits">
+    <button type="button" class="modal-close" id="trialClose" aria-label="Cerrar">×</button>
+    <h2 id="trialTitle">¿Seguimos con la música?</h2>
+    <button type="button" class="btn btn-buy" id="trialBuy" autofocus>Desbloquear el catálogo</button>
+    <p id="trialBenefits"></p>
+  </dialog>
+
   <!-- Comprobante de pago -->
   <div class="modal" id="paywall" hidden role="dialog" aria-modal="true" aria-labelledby="pwTitle">
     <div class="modal-box">
