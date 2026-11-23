@@ -5,7 +5,7 @@ const path = require("path");
 const crypto = require("crypto");
 const { Readable } = require("stream");
 
-const pixelProduccion = process.env.RENDER_EXTERNAL_HOSTNAME === "pack-musical-player.onrender.com" ? "1353260216811765" : "";
+const pixelProduccion = process.env.RENDER_EXTERNAL_HOSTNAME === "pack-musical-player.onrender.com" ? "918194131284133" : "";
 const pixelId = process.env.META_PIXEL_ID ?? pixelProduccion;
 
 const config = {
