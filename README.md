@@ -182,3 +182,7 @@ Usa la URL pública HTTPS del reproductor que muestra Render como destino del an
 En Render → Environment, agrega `META_PIXEL_ID` con el identificador numérico del píxel o conjunto de datos de tu negocio. Guarda el cambio y vuelve a desplegar. El píxel del navegador envía `PageView` y `ViewContent` al abrir el reproductor, `InitiateCheckout` al entrar al flujo de compra y `Purchase` con el precio del pack en COP tras la aprobación de un comprobante nuevo. Configura `PRICE_AMOUNT` o `PRICE_NOW` con el precio vigente. Una compra pendiente se registra cuando el comprador vuelve al mismo navegador o mantiene la app abierta y recibe la aprobación. Los pagos finalizados en un sitio externo requieren la integración de ese proveedor para confirmar una venta.
 
 Comprueba el recorrido en Administrador de eventos → Probar eventos antes de activar la campaña. Usa el número de soporte en `WHATSAPP_NUMBER` para ofrecer ayuda por separado.
+
+### Opiniones de compradores
+
+En Render puedes configurar `TESTIMONIOS_JSON` como una lista JSON de hasta seis opiniones. Cada entrada lleva `nombre` (el nombre público elegido por el comprador) y `texto` (sus palabras). Publica únicamente opiniones reales con autorización. Omite teléfonos, códigos de acceso y datos de pago. Una lista vacía oculta la sección.

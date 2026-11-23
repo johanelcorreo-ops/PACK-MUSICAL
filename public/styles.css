@@ -409,3 +409,9 @@ body.no-player .dl-toast { bottom: calc(24px + env(safe-area-inset-bottom)); }
 
 .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
 .hero-actions button { margin: 0; min-height: 44px; cursor: pointer; }
+
+.purchase-note { max-width: 52ch; line-height: 1.5; }
+.reviews figure { margin: 0; padding: 12px 0; overflow-wrap: anywhere; }
+.reviews figure + figure { border-top: 1px solid var(--line); }
+.reviews blockquote { margin: 0 0 6px; line-height: 1.5; }
+.reviews figcaption { font-weight: 700; color: var(--accent); }
