@@ -420,3 +420,33 @@ body.no-player .dl-toast { bottom: calc(24px + env(safe-area-inset-bottom)); }
   .site-nav { flex-wrap: wrap; padding-block: 10px; }
   .site-nav > div { flex-wrap: wrap; }
 }
+
+/* Hilo de comentarios de la comunidad */
+.reviews figure {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  margin: 14px 0 0 42px;
+  padding: 12px 16px;
+  background: #282331;
+  border-radius: 4px 16px 16px 16px;
+}
+.reviews figure + figure { border-top: 0; }
+.reviews figure::before {
+  content: "♪";
+  position: absolute;
+  left: -42px;
+  top: 0;
+  width: 33px;
+  height: 33px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #5b3975;
+  color: white;
+  font-size: 18px;
+}
+.reviews figure:nth-of-type(3n + 2)::before { background: #28635b; }
+.reviews figure:nth-of-type(3n)::before { background: #754623; }
+.reviews figcaption { grid-row: 1; font-size: .92rem; }
+.reviews blockquote { margin: 0; }
