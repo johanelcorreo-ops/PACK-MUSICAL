@@ -420,3 +420,5 @@ body.no-player .dl-toast { bottom: calc(24px + env(safe-area-inset-bottom)); }
 .trial-offer::backdrop { background: #05030ccc; }
 .trial-offer .btn { margin-top: 14px; }
 .trial-offer p { margin: 12px 0 0; color: var(--muted); line-height: 1.5; }
+
+#pwInfo { display: block; margin-top: 4px; white-space: pre-line; overflow-wrap: anywhere; }

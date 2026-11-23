@@ -8,6 +8,9 @@ const { Readable } = require("stream");
 const pixelProduccion = process.env.RENDER_EXTERNAL_HOSTNAME === "pack-musical-player.onrender.com" ? "918194131284133" : "";
 const pixelId = process.env.META_PIXEL_ID ?? pixelProduccion;
 
+const cuentaBancolombia = (process.env.BANCOLOMBIA_ACCOUNT || "").trim();
+const cuentasConfiguradas = (process.env.PAYMENT_ACCOUNTS || "").split(",").map(s => s.trim()).filter(Boolean);
+
 const config = {
   port: Number(process.env.PORT) || 3000,
   folderId: process.env.GDRIVE_FOLDER_ID || "",
@@ -41,9 +44,9 @@ const config = {
   // Valor mínimo que debe tener el comprobante (si no se pone, se toma de PRICE_NOW)
   priceAmount: Number(String(process.env.PRICE_AMOUNT || process.env.PRICE_NOW || "").replace(/\D/g, "")) || 0,
   // Cuenta(s) a donde deben pagar, separadas por coma (ej. "3016797379")
-  paymentAccounts: (process.env.PAYMENT_ACCOUNTS || "").split(",").map((s) => s.trim()).filter(Boolean),
+  paymentAccounts: cuentasConfiguradas.length ? [...cuentasConfiguradas, cuentaBancolombia].filter(Boolean) : [],
   // Texto que ve el cliente con los datos para pagar
-  paymentInfo: process.env.PAYMENT_INFO || "",
+  paymentInfo: [cuentaBancolombia && `Bancolombia · Cuenta ${cuentaBancolombia}`, process.env.PAYMENT_INFO?.trim()].filter(Boolean).join("\n"),
   receiptMaxDays: Number(process.env.RECEIPT_MAX_DAYS) || 2,
   // Fecha REAL en que termina la oferta, ej. 2026-11-30T23:59:00-05:00 (vacío = sin cuenta regresiva)
   offerEnds: process.env.OFFER_ENDS || "",

@@ -848,7 +848,7 @@
   function openPaywall() {
     if (!acc.paywall || acc.unlocked) return;
     $("pwPrice").textContent = cfg.priceNow || "el pack";
-    $("pwInfo").textContent = cfg.paymentInfo ? ` a: ${cfg.paymentInfo}` : "";
+    $("pwInfo").textContent = cfg.paymentInfo || "";
     $("pwSub").textContent = acc.trialId
       ? "Ya escuchaste tu canción de prueba. Para seguir escuchando todo:"
       : "Para escuchar toda la música:";
