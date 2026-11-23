@@ -18,11 +18,12 @@ const config = {
   shuffle: (process.env.SHUFFLE || "true") !== "false",
   title: process.env.SITE_TITLE || "MÚSICA Y MÁS",
   subtitle: process.env.SITE_SUBTITLE || "Escucha, busca y disfruta toda la música",
+  metaPixelId: /^\d+$/.test(process.env.META_PIXEL_ID || "") ? process.env.META_PIXEL_ID : "",
   buyUrl: process.env.BUY_URL || "",
   buyText: process.env.BUY_TEXT || "Comprar el pack",
   // Información del pack (los puntos se separan con "|")
   features: (process.env.PACK_FEATURES ||
-    "Todos los géneros organizados por carpetas|Descarga en MP3 y MP4|Entrega inmediata por WhatsApp|Acceso para siempre")
+    "Todos los géneros organizados por carpetas|Descarga en MP3 y MP4|Reproduce desde tu celular o computador|Acceso para siempre")
     .split("|").map((f) => f.trim()).filter(Boolean),
   priceBefore: process.env.PRICE_BEFORE || "",
   priceNow: process.env.PRICE_NOW || "",
@@ -287,6 +288,7 @@ app.get("/api/acceso", async (req, res) => {
     paywall,
     receiptsEnabled,
     unlocked: a.unlocked,
+    compra: a.est?.estado === "aprobado" ? a.ck.compra || null : null,
     trialId: a.ck.t || null,
     codigo: a.ck.c || null,
     estado: a.est ? a.est.estado : null,
@@ -344,9 +346,13 @@ app.post("/api/comprobante", express.json({ limit: "4mb" }), async (req, res) =>
       texto,
       imagen,
     });
+    let compra = null;
     if (guardado.estado !== "rechazado") {
       const ck = cookies.leer(req);
-      cookies.escribir(res, { ...ck, c: guardado.codigo });
+      if (config.metaPixelId && config.priceAmount > 0) {
+        compra = { id: crypto.randomUUID(), value: config.priceAmount };
+      }
+      cookies.escribir(res, { ...ck, c: guardado.codigo, compra });
       estadoCache.set(guardado.codigo, { at: Date.now(), estado: guardado.estado, motivo: guardado.motivo });
     }
     console.log(`Comprobante ${guardado.estado}: ${r.banco} ref ${r.referencia} valor ${r.valor} fecha ${r.fecha}`);
@@ -354,6 +360,7 @@ app.post("/api/comprobante", express.json({ limit: "4mb" }), async (req, res) =>
       estado: guardado.estado,
       motivo: guardado.motivo,
       codigo: guardado.estado === "rechazado" ? null : guardado.codigo,
+      compra,
       leido: { referencia: r.referencia, valor: r.valor, fecha: r.fecha, banco: r.banco },
     });
   } catch (err) {
@@ -372,7 +379,8 @@ app.post("/api/codigo", express.json({ limit: "1kb" }), async (req, res) => {
   const est = await estadoDeCodigo(codigo);
   if (!est || est.estado === "no_existe") return res.status(404).json({ error: "Ese código no existe." });
   if (est.estado === "aprobado" || est.estado === "pendiente") {
-    cookies.escribir(res, { ...cookies.leer(req), c: codigo });
+    const ck = cookies.leer(req);
+    cookies.escribir(res, { ...ck, c: codigo, compra: ck.c === codigo ? ck.compra : null });
   }
   res.json({ estado: est.estado, motivo: est.motivo });
 });
@@ -419,6 +427,7 @@ app.get("/api/config", (_req, res) => {
   res.json({
     title: config.title,
     subtitle: config.subtitle,
+    metaPixelId: config.metaPixelId,
     buyUrl: config.buyUrl,
     buyText: config.buyText,
     previewSeconds: config.previewSeconds,

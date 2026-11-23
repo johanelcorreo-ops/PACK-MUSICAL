@@ -174,3 +174,11 @@ node design/render.js design/portada.svg public/portada.jpg public/og.jpg
 ```
 
 O simplemente reemplaza `public/portada.jpg` por tu propia imagen cuadrada.
+
+### Anuncios de Meta con destino al sitio web
+
+Usa la URL pública HTTPS del reproductor que muestra Render como destino del anuncio (imagen o video). En el Administrador de anuncios, elige ventas en el sitio web. Configura los datos de pago y los comprobantes según la sección anterior para que la compra se complete en la app.
+
+En Render → Environment, agrega `META_PIXEL_ID` con el identificador numérico del píxel o conjunto de datos de tu negocio. Guarda el cambio y vuelve a desplegar. El píxel del navegador envía `PageView` y `ViewContent` al abrir el reproductor, `InitiateCheckout` al entrar al flujo de compra y `Purchase` con el precio del pack en COP tras la aprobación de un comprobante nuevo. Configura `PRICE_AMOUNT` o `PRICE_NOW` con el precio vigente. Una compra pendiente se registra cuando el comprador vuelve al mismo navegador o mantiene la app abierta y recibe la aprobación. Los pagos finalizados en un sitio externo requieren la integración de ese proveedor para confirmar una venta.
+
+Comprueba el recorrido en Administrador de eventos → Probar eventos antes de activar la campaña. Usa el número de soporte en `WHATSAPP_NUMBER` para ofrecer ayuda por separado.
